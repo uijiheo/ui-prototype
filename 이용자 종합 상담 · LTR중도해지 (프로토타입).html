@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>이용자 종합 상담 (프로토타입)</title>
+<style>
+/* ===== 디자인 토큰: 기존 시스템 화면(사진) 기준 임시값. 실제 CSS 확인 후 여기만 교체 ===== */
+:root{--navy:#1c2b52;--navy2:#0e1a38;--blue:#2f7fd6;--bg:#f4f4f2;--pn:#fff;--lab:#e8e8e4;--key:#f7f0c6;--ln:#cdcdc7;--tx:#222;--mu:#666;--rd:#c0392b;--ok:#1d7a46;--wn:#8a5d00;--fs:12px;--ctl:24px;--rad:12px}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181f;--pn:#1d222c;--lab:#2a303c;--key:#4a4320;--ln:#3b4252;--tx:#e6e8ee;--mu:#9aa3b5;--rd:#ff8a7a;--ok:#5fd08e;--wn:#e2b24c;--blue:#4a97ee}}
+:root[data-theme="dark"]{--bg:#15181f;--pn:#1d222c;--lab:#2a303c;--key:#4a4320;--ln:#3b4252;--tx:#e6e8ee;--mu:#9aa3b5;--rd:#ff8a7a;--ok:#5fd08e;--wn:#e2b24c;--blue:#4a97ee}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:inherit}
+body{margin:0;font:var(--fs)/1.45 "Malgun Gothic","Noto Sans KR","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--tx)}
+.top{background:linear-gradient(90deg,var(--navy2),var(--navy));color:#fff;border-radius:0 0 0 28px;padding:12px 18px;display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.top nav{display:flex;gap:24px;flex-wrap:wrap;font-weight:700;font-size:13px}
+main{padding:8px 12px 40px;max-width:1560px;margin:0 auto}
+.demo{border:1px solid var(--wn);color:var(--wn);padding:4px 10px;border-radius:var(--rad);margin:6px 0;font-size:11px}
+h1{font-size:14px;margin:8px 0}
+input,select,textarea{height:var(--ctl);border:1px solid var(--ln);border-radius:var(--rad);padding:0 8px;font:inherit;background:var(--pn);color:var(--tx);min-width:0;width:100%}
+textarea{height:48px;padding:4px 8px;border-radius:8px}
+input[type=checkbox],input[type=radio]{width:auto;height:auto}
+input:disabled:not([type=checkbox]),select:disabled,textarea:disabled{background:transparent;border-color:transparent;color:var(--tx);-webkit-text-fill-color:var(--tx);opacity:1;appearance:none}input[type=checkbox]:disabled{opacity:1;accent-color:var(--navy)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.b{height:var(--ctl);border:1px solid var(--ln);border-radius:var(--rad);background:var(--pn);color:var(--tx);padding:0 10px;font:inherit;cursor:pointer}
+.b.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.b:disabled,button:disabled{opacity:.45;cursor:not-allowed}
+.sbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:var(--lab);padding:6px 10px;border-radius:var(--rad)}
+.sbar select{width:130px}.sbar #q{width:300px;border-color:var(--blue)}
+.go{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;border:0;cursor:pointer}
+section{margin:12px 0}
+.st{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin:4px 0;gap:8px;flex-wrap:wrap}
+.bt{display:flex;gap:4px}
+.g{display:grid;grid-template-columns:repeat(3,92px 1fr);border-top:1px solid var(--ln);border-left:1px solid var(--ln);background:var(--pn)}
+.l,.v,.gh{border-right:1px solid var(--ln);border-bottom:1px solid var(--ln);padding:2px 6px;min-height:26px;line-height:1.25}
+.l{background:var(--lab);font-weight:700;text-align:right;display:flex;align-items:center;justify-content:flex-end}
+.l.k{background:var(--key)}
+.v{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.v.w3{grid-column:span 5}.v.w2{grid-column:span 3}.v>input,.v>select{flex:1 1 90px;width:auto}.v small.mono{flex:1 0 100%}.g.off{opacity:.55}
+/* 상단 메뉴: 그룹 버튼에 커서를 올리거나 누르면 하위 화면 목록이 열린다 */
+.top nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.mg{position:relative}
+.mb{background:none;border:1px solid #ffffff66;color:#fff;border-radius:14px;height:26px;padding:0 14px;font:inherit;font-weight:700;cursor:pointer}
+.mb.on,.mg.open .mb,.mg:hover .mb{background:#fff;color:var(--navy)}
+.msub{display:none;position:absolute;top:100%;left:0;min-width:170px;padding:4px;background:var(--pn);border:1px solid var(--ln);border-radius:8px;z-index:7;flex-direction:column;gap:2px;box-shadow:0 4px 10px #0003}
+.mg:hover .msub,.mg.open .msub,.mg:focus-within .msub{display:flex}.mg.shut .msub{display:none!important}
+.mi{background:none;border:0;border-radius:6px;text-align:left;padding:5px 10px;font:inherit;color:var(--tx);cursor:pointer}.mi:hover,.mi.on{background:var(--key)}
+.tbar{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}.tbar .b{border-radius:6px}
+.mdl.xl{max-width:980px}.doc h3{margin:0 0 8px;text-align:center}.doc p{margin:6px 0;line-height:1.7}
+.sig{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px;border-top:1px solid var(--ln);border-left:1px solid var(--ln)}.sig div{border-right:1px solid var(--ln);border-bottom:1px solid var(--ln);text-align:center;padding:2px}.sig div:nth-child(n+4){height:36px}
+@media print{body>*:not(#ov){display:none!important}#ov{position:static;background:none}.mdl{max-width:none;max-height:none;overflow:visible}.noprint,#mx{display:none!important}:root{padding:0}}.hist{font-size:11px;margin:0 0 0 8px;padding-left:8px;border-left:2px solid var(--ln)}.hist div{padding:1px 0}.hist .tg{font-weight:600}
+.cols{display:flex;gap:8px;align-items:flex-start}.mainc{flex:1;min-width:0}
+#fn{width:128px;flex:none;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;border:1px solid var(--navy);border-radius:var(--rad);padding:6px;display:flex;flex-direction:column;gap:4px;background:var(--pn)}
+#fn .b{width:100%;height:26px;border-radius:6px;font-size:11.5px;padding:0 4px}
+.mdl.wide{max-width:680px;width:calc(100% - 24px);max-height:90vh;overflow:auto}
+@media(max-width:1000px){.cols{flex-direction:column}#fn{width:auto;position:static;flex-direction:row;flex-wrap:wrap;max-height:none}#fn .b{width:auto;padding:0 10px}}
+.gh{grid-column:1/-1;background:var(--lab);color:var(--blue);font-weight:700}
+.t{border-collapse:collapse;width:100%;background:var(--pn)}
+.t th,.t td{border:1px solid var(--ln);padding:3px 6px;white-space:nowrap;text-align:left}
+.t th{background:var(--lab)}
+.t td.r{text-align:right}
+.t tr[data-a]{cursor:pointer}.t tr.sel td{background:var(--key)}
+.t tr.gh td{background:var(--lab);color:var(--blue);font-weight:700}
+.t tr.miss td{background:color-mix(in srgb,var(--rd) 14%,transparent)}
+.sc{overflow-x:auto}
+.ex td:first-child,.ex th:first-child{position:sticky;left:0;background:var(--pn)}
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--navy);margin-bottom:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--ln);border-bottom:0;background:var(--lab);color:var(--tx);padding:5px 14px;border-radius:8px 8px 0 0;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--navy);color:#fff}
+.sum{display:flex;gap:16px;flex-wrap:wrap;background:var(--pn);border:1px solid var(--ln);border-radius:var(--rad);padding:6px 12px}
+.mu,.hint{color:var(--mu)}.hint{margin:4px 0}
+.err{color:var(--rd)}small.err{display:block;width:100%}
+.empty{padding:18px;text-align:center;color:var(--mu);background:var(--pn);border:1px dashed var(--ln);border-radius:var(--rad)}
+.pill{padding:1px 10px;border-radius:10px;background:var(--lab)}.s-ok{color:var(--ok)}.s-fail{color:var(--rd)}
+.mono{font-family:ui-monospace,Consolas,monospace}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--navy);color:#fff;padding:8px 16px;border-radius:var(--rad);display:none;z-index:8}
+#toast.e{background:var(--rd);color:#fff}
+#ov{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;z-index:9}#ov[hidden]{display:none}
+.mdl{background:var(--pn);padding:18px;border-radius:var(--rad);max-width:360px}
+@media(max-width:800px){.g{grid-template-columns:100px 1fr}.v.w3,.v.w2{grid-column:span 1}}
+</style></head><body>
+<header class="top"><nav id="nav"></nav></header>
+<main>
+<h1 id="ttl">이용자 종합 상담</h1>
+<form id="sf" class="sbar" autocomplete="off">
+<select id="cond" aria-label="검색조건"><option value="name">이용자명</option><option value="biz">사업자등록번호</option><option value="birth">생년월일</option><option value="rep">대표자명</option><option value="plate">차량번호</option><option value="ct">계약번호</option></select>
+<input id="q" aria-label="검색값"><button class="go" aria-label="검색">&#128269;</button>
+<button type="button" class="b" id="newc">고객등록</button><span class="mu" id="exh">테스트 예시: <b>홍길동</b>, <b>00주식회사</b>를 검색하면 정보를 확인할 수 있습니다.</span></form>
+<div class="cols"><div class="mainc"><div id="res"></div><div id="app"></div></div><aside id="fn" aria-label="업무 기능"></aside></div>
+</main><div id="toast" role="status" aria-live="polite"></div><div id="ov" hidden></div>
+<script>
+'use strict';
+/* =====================================================================
+ 1. 설정·공통코드·정책  (TODO: 운영 공통코드/정책 API로 교체. 여기 값은 모두 데모)
+ ===================================================================== */
+const P=a=>a.map(x=>Array.isArray(x)?x:[x,x]);
+const CODES={
+ custType:[['P','개인'],['S','개인사업자'],['C','법인']],
+ carrier:['SKT','KT','LG U+','알뜰폰'],              // 데모값: 실제 통신사 목록 미확정
+ base:['고흥','연천'],                                // 사용본거지: 검토 중인 후보값(확정 아님)
+ resVendor:['오토핸즈','유카','오토플러스'],           // 미지정 허용
+ mtProduct:['셀프','스탠다드'],
+ penalty:[['direct','직접납부'],['notice','통지서'],['change','임차인변경']], // TODO: 실제 명칭(법칙금유형) 확인
+ bill:[['post','우편'],['email','이메일'],['none','발송 거부']],
+ bizState:[['susp','휴업'],['closed','폐업'],['normal','사업']], // 기존 시스템 표기 그대로. TODO: '사업'이 정상영업을 의미하는지 확인
+ kmBasis:[['y','연간'],['t','전체 계약기간']],          // TODO: 약정거리 기준 정책 확인
+ insurer:['샘플화재','테스트손해보험'],            // 보험사명. 외부 보험사코드와 별개 관리
+ daemul:[[1e8,'1억'],[2e8,'2억'],[3e8,'3억'],[5e8,'5억']], // 원 단위 저장. 확정 상품 아님
+ deduct:[[300000,'30만원'],[500000,'50만원']],
+ age:[['0020','21세'],['0030','26세']],               // NOTE: M/T 코드는 선행 0 보존 위해 문자열
+ alt:[['0001','없음'],['0002','1만원'],['0003','2만원'],['0004','3만원']],
+ rel:['배우자','직원','기타'],
+ termState:['해지진행중','매각후해지종결','해지종결'], // TODO: 진행상태 값 목록 확인(매각후해지종결 외는 임시)
+ termReason:['정상해지','강제해지(미납)','강제해지(기타)'], // TODO: 해지사유 값 목록 확인
+ termRet:['반납','미반납'],
+ cs:{dept:['CS','ACT','Collection'],type:['inbound','outbound'],method:['일반','out'],kind:['전화상담'],
+  content:['기타','결제'],detail:{'기타':['기타'],'결제':['연체','기타']},resp:['본인','대리인','기타'],result:['미상담','기타'],
+  tags:['자동이체일자 변경','LMS 발송','고객정보 변경','기타']} // TODO: inbound/outbound와 out/일반 중복 여부 — 기존 운영코드 확인 필요
+};
+const CS_CASCADE=true; // 상담 내용→상세내용 연동 여부(설정)
+/* [추가운전자 정책] — 화면에는 표기하지 않고 값과 동작 방식만 코드에 보관한다(이전에 표기하던 '운전자 정책' 문구 삭제).
+   POLICY.driver (null = '정책 미설정'. 0회/무제한으로 해석하지 않는다)
+     max          : 최대 지정 인원. 숫자로 확정되면 drvOp()의 '추가'에서 초과 시 차단한다(현재 적용 코드는 있음)
+     limit        : 변경 가능 횟수.            → 아직 검사 로직 없음. 확정 후 drvOp()/COMMIT.ins()에서 변경이력(hist) 건수로 검사하도록 추가
+     period       : 변경 횟수 산정 기간.      → 아직 미사용. 확정 후 hist의 변경일시 필터 기준으로 사용
+     countFirst   : 최초 등록을 변경 횟수에 포함할지(true/false) → 아직 미사용
+     countRelease : 지정 해제를 변경 횟수에 포함할지(true/false) → 아직 미사용
+   allowRelease : '지정 해제' 버튼 허용 여부(현재 true).
+   화면에 다시 표기하려면 tabIns()의 '추가운전자 정보' 제목 옆에 "최대 지정 인원 ${pv(pd.max)} · 변경 가능 횟수 ${pv(pd.limit)} …" 형태로 출력하면 된다(pv/pd는 tabIns 안에 이미 정의됨). */
+const POLICY={driver:{max:null,limit:null,period:null,countFirst:null,countRelease:null}, // null = 정책 미설정(0/무제한으로 해석 금지)
+ allowRelease:true,showTxType:true /* 거래선구분: 필요 여부 업무 확인 필요(TODO). 숨기려면 false */,showSoleContact:false};
+const PERM={custEdit:true,acctView:false,ctEdit:true,drvChange:true,csAdd:true,mtSend:true}; // NOTE: 화면 제어용일 뿐 운영 권한은 서버에서 검증
+const MT_BIZ={P:'0001',S:'0002',C:'0004'};   // 비즈니스유형코드(문자열)
+const MT_ADDR_SRC='a1';                      // 오픈링크 고객주소 ← 주소1(a1)/주소2(a2) 매핑 설정
+const MT_REQ=[]; // TODO: M/T 필수 항목 미확정. 확정되면 항목명을 추가 (예: ['고객번호'])
+
+/* =====================================================================
+ 2. 변환·포맷 함수 (표시값과 저장/연동값 분리)
+ ===================================================================== */
+const $=s=>document.querySelector(s),clone=o=>JSON.parse(JSON.stringify(o)),delay=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dig=s=>String(s||'').replace(/\D/g,''),ymd=d=>String(d||'').replace(/-/g,''),num=n=>n===''||n==null?'':Number(n).toLocaleString('ko-KR');
+const fmtTel=s=>{const d=dig(s);return d.length===11?`${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`:(s||'')};
+const fmtBiz=s=>{const d=dig(s);return d.length===10?`${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`:(s||'')};
+const maskTel=s=>fmtTel(s).replace(/-\d{4}-/,'-****-'),maskBiz=s=>fmtBiz(s).replace(/\d{5}$/,'*****');
+const maskAcct=n=>{n=String(n||'');return PERM.acctView?n:n.slice(0,3)+'*'.repeat(Math.max(0,n.length-6))+n.slice(-3)};
+/* 원→만원/천원: 나누어떨어지지 않으면 조용히 반올림하지 않고 오류 반환 */
+const won2=(w,u)=>{if(w===''||w==null)return{v:''};const n=Number(w);if(!Number.isFinite(n))return{e:'숫자 형식 오류'};if(n%u)return{e:`${num(u)}원 단위로 나누어떨어지지 않음(반올림 안 함)`};return{v:String(n/u)}};
+const now=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`},today=()=>now().slice(0,10);
+const tname=t=>CODES.custType.find(x=>x[0]===t)?.[1]||'';
+const W=v=>v===''||v==null?'':num(v)+'원',K=v=>v===''||v==null?'':num(v)+' km';
+
+/* =====================================================================
+ 3. Mock 데이터 / Mock API  (TODO: api 객체의 각 메서드를 내부 백엔드 REST 호출로 교체)
+    모든 인물·번호는 가상값. 실제 고객정보 사용 금지.
+ ===================================================================== */
+const A=(z,r,rd,j,jd)=>({zip:z,road:r,roadDtl:rd,jibun:j,jibunDtl:jd});
+const mkCust=(id,o)=>Object.assign({id,code:'',type:'P',name:'',txType:'이용자',birth6:'',bizNo:'',rep:'',nation:'대한민국',guarantor:'',tel:'',hp:'',email:'',a1:A('','','','',''),a2:A('','','','',''),contact:{name:'',tel:'',hp:''},vAcct:{bank:'',no:''},wAcct:{bank:'',no:''},bill:'',penalty:'',notif:{sms:false,smsMonthly:false,precall:false,smsRemain:false,lms:false},carrier:'',bizState:'',bizDate:''},o);
+const mt0=()=>({customerNo:'',corpNo:'',industry:'',bizCond:'',vehClass:'',region:'',mtCar:'',contractKm:'',kmExempt:'N',asName:'',asTel:'',asHp:'',as:A('','','','',''),insCode:'',cv:{dain:'Y',daemul:'Y',self:'N',car:'N',unins:'N',emerg:'N',rent:'N',newcar:'N'},deathWon:'',carPriceWon:'',alt:'0001',nextInsp:'',nextPrec:''});
+/* 데모 M/T 전용값. 화면에는 표시값(예/아니오·차명 등)이 나오고, 내부에는 오픈링크 코드를 문자열로 저장(선행 0 보존). 코드표는 MTX(샘플) */
+const mtD=n=>({corpNo:'',industry:'',bizCond:'',kmExempt:'N',asName:'',asTel:'',asHp:'',as:A('','','','',''),cv:{dain:'Y',daemul:'Y',self:'Y',car:'Y',unins:'Y',emerg:'Y',rent:'Y',newcar:'Y'},deathWon:'100000000',carPriceWon:{1:'45000000',2:'48000000',3:'42000000',4:'60000000',5:'65000000'}[+n],alt:'0002',nextInsp:{1:'2030-01-04',2:'2029-05-27',3:'2030-03-09',4:'2030-01-27',5:'2030-03-26'}[+n],nextPrec:{1:'2030-07-04',2:'2029-11-27',3:'2030-09-09',4:'2030-07-27',5:'2030-09-26'}[+n]}); // AS담당자·소재지는 계약 후 입력(빈 값)
+/* NOTE: 승계 시 계약번호가 변경된다(기존 번호는 이력에 남고 새 번호가 생성).
+   실행내역 행의 id=해당 시점의 계약번호(없으면 현재 계약번호 k.id), prev=승계 전 기존 계약번호. 기존 번호는 실행내역·계약번호 검색에 계속 남는다.
+   TODO: 운영에서는 승계 처리 시 서버가 새 번호를 채번해 계약 id를 교체하고 기존 번호를 이력에 보존(이 화면에는 승계 실행 기능 없음). M/T 위탁사계약번호도 새 번호로 갱신할지 확인 필요 */
+const ex=(date,st,o)=>Object.assign({date,st,period:'',acq:0,plan:'',term:'',mat:'',close:'',unrec:0,remain:0,notary:'미해당',mid:'E1023',mnm:'김채권',pay:'자동이체'},o);
+const IN=(company,start,end,age,daemul,deduct,emp,drivers)=>({company,start,end,age,daemul,deduct,emp,drivers});
+const H=(at,type,who,bf,af,why,by)=>({at,type,who,bf,af,why,by});
+const CR=(id,date,time,phone,dept,type,method,content,detail,resp,result,memo,counselor,special,tags,ct)=>({id,date,time,phone,kind:'전화상담',dept,type,method,content,detail,resp,result,regAt:date+' '+time,memo,counselor,special,tags,ct});
+const mkCt=(id,o,m)=>Object.assign({id,kind:'장기렌트',prod:'',base:'',start:'',end:'',months:'',maker:'',car:'',model:'',regDate:'',firstKm:'',plate:'',vin:'',deposit:'',prepaid:'',residual:'',monthly:'',agreedKm:'',kmBasis:'',overKm:200,resVendor:'유카',mtVendor:'오픈링크',mtProduct:'',status:'',term:{state:'',baseDate:'',reason:'',ret:'',takeDate:''},pay:[],late:0,branch:'본사',
+ ins:IN('','','','','','',false,[]),hist:[],exec:[],mt:Object.assign(mt0(),m),mtSt:{status:'none',last:'',lastOk:'',verify:'없음',code:'',msg:''}},o);
+const DB={cust:[
+ mkCust('U1',{code:'MOCK-0001',name:'홍길동',birth6:'900123',hp:'01012345678',email:'gildong.hong@example.com',a1:A('00000','서울특별시 강남구 가나다로 123','3층','서울특별시 강남구 가나다동 123-4','3층'),a2:A('00000','경기도 성남시 분당구 라마바로 456','101동 1503호','경기도 성남시 분당구 라마바동 456-7','101동 1503호'),vAcct:{bank:'우리은행',no:'1002345678901'},wAcct:{bank:'신한은행',no:'110234567890'},bill:'post',penalty:'direct',notif:{sms:true,smsMonthly:true,precall:false,smsRemain:true,lms:true},carrier:'SKT'}),
+ mkCust('U2',{code:'MOCK-0002',name:'홍길순',birth6:'920815',hp:'01023456789',email:'gilsoon.hong@example.com',a1:A('00000','서울특별시 송파구 사아자로 789','12층','서울특별시 송파구 사아자동 789-1','12층'),a2:A('00000','경기도 용인시 수지구 차카타로 321','101동 802호','경기도 용인시 수지구 차카타동 321-9','101동 802호'),vAcct:{bank:'우리은행',no:'1002345678902'},wAcct:{bank:'국민은행',no:'123401234567'},bill:'email',penalty:'notice',notif:{sms:true,smsMonthly:false,precall:false,smsRemain:false,lms:false},carrier:'KT'}),
+ mkCust('U3',{code:'MOCK-0003',type:'S',name:'꺽정상사',birth6:'750303',bizNo:'1234567890',rep:'임꺽정',tel:'02-345-6701',hp:'01034567890',email:'ggeokjeong@example.com',a1:A('00000','서울특별시 영등포구 파하거로 654','2층','서울특별시 영등포구 파하거동 654-3','2층'),a2:A('00000','서울특별시 영등포구 파하거로 654','2층','서울특별시 영등포구 파하거동 654-3','2층'),vAcct:{bank:'우리은행',no:'1002345678903'},wAcct:{bank:'신한은행',no:'110345678901'},bill:'post',penalty:'change',notif:{sms:true,smsMonthly:true,precall:true,smsRemain:false,lms:false},carrier:'LG U+',bizState:'normal',bizDate:'2026-03-02'}),
+ mkCust('U4',{code:'MOCK-0004',type:'C',name:'00주식회사',bizNo:'2345678901',rep:'박문수',guarantor:'성춘향',tel:'02-345-6789',hp:'01045678901',email:'bill@corp00.example.com',a1:A('00000','서울특별시 강남구 거너더로 987','10층','서울특별시 강남구 거너더동 987-6','10층'),a2:A('00000','서울특별시 강남구 러머버로 85길 8','3층','서울특별시 강남구 러머버동 85-8','3층'),contact:{name:'변학도',tel:'02-345-6790',hp:'01056789012'},vAcct:{bank:'우리은행',no:'1002345678904'},wAcct:{bank:'신한은행',no:'110456789012'},bill:'email',penalty:'direct',notif:{sms:true,smsMonthly:false,precall:false,smsRemain:true,lms:true},carrier:'SKT',bizState:'normal',bizDate:'2026-01-15'})],
+ ct:{U1:[
+  mkCt('L-DEMO-0001-001',{prod:'(2026-01) 장기렌트 36개월',base:'고흥',start:'2026-01-10',end:'2029-01-09',months:36,maker:'르노코리아',car:'그랑콜레오스',model:'E-TECH HEV[2027MY] 아이코닉 2WD (A/T)',regDate:'2026-01-05',firstKm:12,plate:'123가4567',vin:'TESTVIN0000000001',deposit:3000000,prepaid:0,residual:21000000,monthly:680000,agreedKm:20000,kmBasis:'y',overKm:200,resVendor:'오토핸즈',mtProduct:'스탠다드',status:'정상',
+   ins:IN('샘플화재','2026-01-10','2027-01-09','0030',1e8,300000,false,[{name:'홍길순',birth:'1992-08-15',rel:'배우자',at:'2026-07-12'},{name:'홍길수',birth:'1993-02-10',rel:'기타',at:'2026-05-20'}]),hist:[H('2026-07-12 13:10','수정','홍길순','홍길순/1992-08-15/기타','홍길순/1992-08-15/배우자','관계 정정(고객 전화 요청)','이상담'),H('2026-05-20 10:30','추가','홍길수','','1993-02-10/기타','고객 요청 추가운전자 등록','김상담'),H('2026-01-10 11:20','추가','홍길순','','1992-08-15/기타','계약 시 최초 등록','김상담')],
+   exec:[ex('2026-07-01','재리스',{period:'30개월',acq:39800000,plan:'2026-08-10',mat:'2029-01-09',unrec:34500000,mid:'E1024',mnm:'박채권'}),ex('2026-01-10','승계',{prev:'L-DEMO-0901-001',period:'36개월',acq:41200000,plan:'2026-02-10',mat:'2029-01-09',unrec:38000000})]},mtD('0001')),
+  mkCt('L-DEMO-0001-002',{prod:'(2025-06) 장기렌트 36개월',base:'연천',start:'2025-06-01',end:'2028-05-31',months:36,maker:'르노코리아',car:'필랑트',model:'E-TECH HEV[2026MY] 아이코닉 4WD (A/T)',regDate:'2025-05-28',firstKm:25,plate:'234나5678',vin:'TESTVIN0000000002',deposit:0,prepaid:5000000,residual:18000000,monthly:590000,agreedKm:30000,kmBasis:'y',overKm:300,resVendor:'유카',mtProduct:'셀프',status:'연체관리',late:2,term:{state:'해지진행중',baseDate:'2026-10-31',reason:'강제해지(미납)',ret:'미반납',takeDate:'2026-11-10'},
+   ins:IN('테스트손해보험','2026-06-01','2027-05-31','0020',2e8,500000,false,[{name:'홍길순',birth:'1992-08-15',rel:'배우자',at:'2026-06-01'}]),hist:[H('2026-06-01 09:40','추가','홍길순','','1992-08-15/배우자','보험 갱신 시 재등록','박상담')],
+   exec:[ex('2026-06-15','재리스',{period:'24개월',acq:31500000,plan:'2026-07-15',mat:'2028-05-31',unrec:21000000,remain:2000000,notary:'공증',mid:'E1024',mnm:'박채권'}),ex('2025-06-01','승계',{prev:'L-DEMO-0902-001',period:'36개월',acq:33800000,plan:'2025-07-01',mat:'2028-05-31',unrec:30000000,remain:5000000,mid:'E1024',mnm:'박채권'})]},
+   mtD('0002'))],
+  U2:[mkCt('L-DEMO-0002-001',{prod:'(2026-03) 장기렌트 36개월',base:'고흥',start:'2026-03-15',end:'2029-03-14',months:36,maker:'르노코리아',car:'아르카나',model:'E-TECH HEV[2026MY] 에스프리 알핀 2WD (A/T)',regDate:'2026-03-10',firstKm:18,plate:'345다6789',vin:'TESTVIN0000000003',deposit:2000000,prepaid:0,residual:17500000,monthly:540000,agreedKm:20000,kmBasis:'y',overKm:300,resVendor:'오토플러스',mtProduct:'셀프',status:'정상',
+   ins:IN('샘플화재','2026-03-15','2027-03-14','0030',1e8,300000,false,[{name:'홍길동',birth:'1990-01-23',rel:'배우자',at:'2026-09-01'}]),
+   hist:[H('2026-09-01 14:05','수정','홍길동','홍길동/1990-01-23/기타','홍길동/1990-01-23/배우자','관계 정정 요청(고객 전화)','이상담'),H('2026-03-15 10:00','추가','홍길동','','1990-01-23/기타','계약 시 최초 등록','이상담')],
+   exec:[ex('2026-03-01','정상해지',{id:'L-DEMO-0903-001',period:'24개월',acq:36800000,plan:'2026-03-10',term:'2026-02-28',mat:'2028-02-29',close:'2026-03-01'}),ex('2026-03-15','승계',{prev:'L-DEMO-0903-001',period:'36개월',acq:36800000,plan:'2026-04-15',mat:'2029-03-14',unrec:35000000})]},mtD('0003')),
+  mkCt('L-DEMO-0002-002',{prod:'(2024-09) 장기렌트 24개월',base:'연천',start:'2024-09-01',end:'2026-08-31',months:24,maker:'르노코리아',car:'아르카나',model:'E-TECH HEV[2025MY] 에스프리 알핀 2WD (A/T)',regDate:'2024-08-28',firstKm:10,plate:'678바9012',vin:'TESTVIN0000000006',deposit:1000000,prepaid:0,residual:15000000,monthly:720000,agreedKm:20000,kmBasis:'y',overKm:200,resVendor:'오토핸즈',mtProduct:'셀프',status:'종료',
+   ins:IN('샘플화재','2024-09-01','2026-08-31','0030',1e8,300000,false,[]),
+   term:{state:'매각후해지종결',baseDate:'2026-08-31',reason:'정상해지',ret:'반납',takeDate:''},
+   pay:[{date:'2026-09-10',kind:'입금',item:'해지 정산금',amt:1250000,by:'김채권',memo:'매각 후 정산'},{date:'2026-09-15',kind:'지급',item:'보증금 반환',amt:1000000,by:'김채권',memo:''}],
+   exec:[ex('2026-08-31','정상해지',{period:'24개월',acq:31000000,plan:'2026-08-31',term:'2026-08-31',mat:'2026-08-31',close:'2026-09-15'}),ex('2024-09-01','승계',{prev:'L-DEMO-0906-001',period:'24개월',acq:31000000,plan:'2024-10-01',mat:'2026-08-31',unrec:29000000})]},
+   Object.assign(mtD('0006'),{carPriceWon:'40000000',nextInsp:'2028-08-28',nextPrec:'2029-02-28'}))],
+  U3:[mkCt('L-DEMO-0003-001',{prod:'(2026-02) 장기렌트 48개월',base:'연천',start:'2026-02-01',end:'2030-01-31',months:48,maker:'르노코리아',car:'QM6',model:'LPe[2026MY] 프리미에르 2WD (A/T)',regDate:'2026-01-28',firstKm:9,plate:'456라7890',vin:'TESTVIN0000000004',deposit:5000000,prepaid:0,residual:24000000,monthly:780000,agreedKm:30000,kmBasis:'y',overKm:200,resVendor:'유카',mtProduct:'스탠다드',status:'정상',
+   ins:IN('테스트손해보험','2026-02-01','2027-01-31','0030',3e8,500000,false,[{name:'이몽룡',birth:'1988-04-12',rel:'직원',at:'2026-02-01'}]),hist:[H('2026-06-20 10:15','지정 해제','정몽주','1985-02-02/직원','','퇴사로 인한 지정 해제','박상담'),H('2026-02-01 15:50','추가','정몽주','','1985-02-02/직원','추가운전자 지정','박상담'),H('2026-02-01 15:30','추가','이몽룡','','1988-04-12/직원','임직원특약 미가입 — 추가운전자 지정','박상담')],
+   exec:[ex('2026-01-20','양도',{id:'L-DEMO-0904-001',period:'48개월',acq:52000000,plan:'2026-02-20',mat:'2030-01-31',unrec:52000000,notary:'공증',mid:'E1025',mnm:'최채권'}),ex('2026-02-01','승계',{prev:'L-DEMO-0904-001',period:'48개월',acq:52000000,plan:'2026-03-01',mat:'2030-01-31',unrec:49000000})]},Object.assign(mtD('0004'),{industry:'도소매업',bizCond:'자동차용품'}))],
+  U4:[mkCt('L-DEMO-0004-001',{prod:'(2026-04) 장기렌트 48개월',base:'고흥',start:'2026-04-01',end:'2030-03-31',months:48,maker:'르노코리아',car:'필랑트',model:'E-TECH HEV[2026MY] 아이코닉 2WD (A/T)',regDate:'2026-03-27',firstKm:15,plate:'567마8901',vin:'TESTVIN0000000005',deposit:10000000,prepaid:0,residual:26000000,monthly:910000,agreedKm:30000,kmBasis:'y',overKm:300,resVendor:'오토핸즈',mtProduct:'스탠다드',status:'정상',
+   ins:IN('샘플화재','2026-04-01','2027-03-31','0030',5e8,300000,true,[{name:'이도령',birth:'1985-11-30',rel:'직원',at:'2026-04-01'}]),hist:[H('2026-04-01 10:00','추가','이도령','','1985-11-30/직원','법인 지정운전자 등록','이상담')],
+   exec:[ex('2026-09-25','재리스',{period:'42개월',acq:56500000,plan:'2026-10-25',mat:'2030-03-31',unrec:53000000,notary:'공증'}),ex('2026-04-01','승계',{prev:'L-DEMO-0905-001',period:'48개월',acq:58000000,plan:'2026-05-01',mat:'2030-03-31',unrec:55000000,notary:'공증'})]},Object.assign(mtD('0005'),{corpNo:'110111-1234567',industry:'제조업',bizCond:'식품제조'}))]},
+ cs:{U1:[CR('CS1','2026-10-20','14:20','010-1234-5678','CS','inbound','일반','결제','기타','본인','기타','자동이체일 변경 문의. 변경 요청 접수(기록만 남김, 실제 변경은 별도 업무).','김상담',true,['자동이체일자 변경'],'L-DEMO-0001-001'),
+   CR('CS2','2026-09-03','10:05','010-1234-5678','Collection','outbound','out','결제','연체','본인','기타','납입 지연 안내 통화.','박상담',false,['LMS 발송'],'L-DEMO-0001-002'),
+   CR('CS3','2026-08-11','16:40','010-1234-5678','CS','inbound','일반','기타','기타','대리인','미상담','대리인 문의. 본인 확인 필요로 추후 재연락.','김상담',false,['고객정보 변경'],'')],
+  U2:[CR('CS4','2026-09-01','14:00','010-2345-6789','CS','inbound','일반','기타','기타','본인','기타','지정운전자 관계 정정 요청 접수.','이상담',false,[],'L-DEMO-0002-001')],
+  U3:[CR('CS5','2026-07-15','11:30','010-3456-7890','ACT','outbound','out','기타','기타','본인','기타','차량 인도 후 안내 통화.','박상담',false,['기타'],'L-DEMO-0003-001')],
+  U4:[CR('CS6','2026-10-05','11:10','02-345-6790','CS','inbound','일반','결제','기타','대리인','기타','청구서 이메일 수신 변경 문의(법인 담당자).','이상담',true,['고객정보 변경'],'')]}};
+DB.sms={U1:[{at:'2026-10-20 14:40',type:'SMS',to:'01012345678',sub:'',text:'[안내] 자동이체일 변경 요청이 접수되었습니다.',by:'김상담',st:'발송'},{at:'2026-09-03 10:20',type:'LMS',to:'01012345678',sub:'납입 안내',text:'고객님, 이번 달 렌트료 납입이 확인되지 않았습니다. 납입 후 연락 부탁드립니다.',by:'박상담',st:'발송'}],U4:[{at:'2026-10-05 11:30',type:'LMS',to:'01056789012',sub:'청구서 안내',text:'청구서 수신 방법이 이메일로 변경 접수되었습니다.',by:'이상담',st:'발송'}]};
+const bytes=t=>[...t].reduce((a,c)=>a+(c.charCodeAt(0)>127?2:1),0); // 한글 2byte 기준(SMS 90byte / LMS 2,000byte)
+const api={
+ async search(cd,q){await delay(250);const D=dig(q),l=q.toLowerCase();return DB.cust.filter(c=>{const ks=DB.ct[c.id]||[];return{name:()=>c.name.includes(q),biz:()=>dig(c.bizNo)===D,birth:()=>c.birth6===q,rep:()=>c.rep&&c.rep.includes(q),plate:()=>ks.some(k=>k.plate===q),ct:()=>ks.some(k=>[k.id,...k.exec.flatMap(r=>[r.id,r.prev])].some(x=>x&&x.toLowerCase().includes(l)))}[cd]()})},
+ /* 저장 공통 진입점. 운영: POST/PUT 후 서버가 등록일시·처리자·채번을 부여 */
+ async commit(fn){await delay(350);if(S.fail){S.fail=false;throw new Error('mock 서버 오류(시뮬레이션)')}return fn()}};
+
+/* =====================================================================
+ 4. 상태·유틸 (고객 단위 S.cust / 계약 단위는 S.ctId 기준으로만 조회)
+ ===================================================================== */
+const S={view:'consult',menu:'',shut:'',sim:null,cust:null,ctId:null,mode:null,edit:{},d:{},dirty:{},err:{},busy:false,fail:false,tab:'ct',drv:-1,csF:{},csSel:null,pg:0};
+const CT=()=>(DB.ct[S.cust?.id]||[]).find(x=>x.id===S.ctId);
+const flat=k=>{const{ins,hist,exec,mt,mtSt,term,pay,...f}=k;return clone(f)};
+/* 고객 미선택 시에도 전체 항목 틀을 보여주기 위한 빈 데이터(저장 대상 아님). 계약상품·M/T업체는 고정 프리셋 */
+const BLANK=mkCust(null,{txType:'',nation:'',type:'',a1:A('','','','',''),a2:A('','','','',''),vAcct:{bank:'',no:''},wAcct:{bank:'',no:''},bill:'',notif:{sms:false,smsMonthly:false,precall:false,smsRemain:false,lms:false},bizState:''});
+const BLANK_CT=(()=>{const k=mkCt('',{});['prod','base','start','end','months','maker','car','model','regDate','firstKm','plate','vin','deposit','prepaid','residual','monthly','agreedKm','kmBasis','overKm','resVendor','mtProduct','status'].forEach(p=>k[p]='');Object.assign(k.ins,{company:'',start:'',end:'',age:'',daemul:'',deduct:'',drivers:[]});k.exec=[];k.mt.kmExempt='';k.mt.alt='';Object.keys(k.mt.cv).forEach(x=>k.mt.cv[x]='');return k})();
+const cu=()=>S.cust||BLANK,ck=()=>CT()||BLANK_CT;
+const base=sc=>sc==='cust'?cu():sc==='ct'?ck():sc==='term'?ck().term:sc==='ins'?ck().ins:sc==='mt'?ck().mt:{};
+const get=(o,p)=>p.split('.').reduce((a,k)=>a?.[k],o);
+const set=(o,p,v)=>{const ks=p.split('.'),l=ks.pop();ks.reduce((a,k)=>a[k],o)[l]=v};
+const val=(sc,p)=>get(S.edit[sc]?S.d[sc]:base(sc),p);
+const isDirty=()=>Object.values(S.dirty).some(Boolean);
+const resetEdit=()=>{S.edit={};S.d={};S.dirty={};S.err={};S.drv=-1};
+function toast(t,k){const e=$('#toast');e.textContent=t;e.className=k||'';e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500)}
+function ask(msg){return new Promise(r=>{const o=$('#ov');o.innerHTML=`<div class="mdl" role="alertdialog" aria-modal="true"><p>${esc(msg)}</p><button class="b p" id="y">계속 진행</button> <button class="b" id="n">돌아가기</button></div>`;o.hidden=false;const f=v=>{o.hidden=true;o.innerHTML='';r(v)};$('#y').onclick=()=>f(true);$('#n').onclick=()=>f(false);$('#n').focus()})}
+async function guard(){return !isDirty()||ask('저장하지 않은 변경 내용이 있습니다. 계속하면 변경 내용이 사라집니다.')}
+
+/* =====================================================================
+ 5. 공통 UI 컴포넌트 (입력/그리드/테이블/섹션)
+ ===================================================================== */
+function inp(sc,p,o={}){const ed=S.edit[sc]&&!o.ro,v=val(sc,p),er=S.err[sc+'.'+p],t=o.t||'text';
+ const a=`data-s="${sc}" data-p="${p}" data-t="${t}"${o.r?' data-r="1"':''}${ed?'':' disabled'}`;let h;
+ if(t==='sel')h=`<select ${a}>${o.blank===false&&v!==''&&v!=null?'':'<option value="">미지정</option>'}${P(o.o).map(([k,l])=>`<option value="${esc(k)}"${String(v)===String(k)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+ else if(t==='chk')h=`<label><input type="checkbox" ${a}${v?' checked':''}> ${esc(o.lb||'')}</label>`;
+ else if(t==='rad')h=P(o.o).map(([k,l])=>`<label><input type="radio" name="${sc}${p}" value="${esc(k)}" ${a}${v===k?' checked':''}> ${esc(l)}</label>`).join(' ');
+ else if(t==='cg')h=P(o.o).map(([k,l])=>`<label><input type="checkbox" data-s="${sc}" data-p="${p}" data-t="cg" data-k="${esc(k)}"${ed?'':' disabled'}${v===k?' checked':''}> ${esc(l)}</label>`).join(' '); // 체크박스 택1: 하나 선택 시 나머지 해제
+ else if(t==='ta')h=`<textarea ${a}>${esc(v)}</textarea>`;
+ else h=`<input ${t==='date'?'type="date"':''} ${a} value="${esc(!ed&&o.f?o.f(v):v)}" placeholder="${esc(o.ph||'')}"${o.n?' inputmode="numeric"':''}>`;
+ return h+(er?`<small class="err">${esc(er)}</small>`:'')}
+const F=(lb,h,o={})=>`<div class="l${o.k?' k':''}">${lb}</div><div class="v${o.w?' w3':o.h?' w2':''}">${h}</div>`;
+const sec=(t,b,bt='')=>`<section><div class="st"><span>• ${t}</span><span class="bt">${bt}</span></div>${b}</section>`;
+const tbl=(h,rows,c='')=>`<div class="sc"><table class="t ${c}"><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${h.length}" class="mu">데이터 없음</td></tr>`}</tbody></table></div>`;
+/* 저장 버튼은 영역별 분리: 라벨로 저장 범위를 명시 */
+const acts=(sc,lb,ok)=>S.edit[sc]?`<button class="b p" data-a="save:${sc}"${S.busy?' disabled':''}>${S.busy?'저장 중…':lb+' 저장'}</button><button class="b" data-a="cancel:${sc}"${S.busy?' disabled':''}>취소</button>`:`<button class="b" data-a="edit:${sc}"${ok&&(sc==='cust'?S.cust:CT())?'':' disabled'}>수정</button>`;
+
+/* =====================================================================
+ 6. 섹션 컴포넌트
+ ===================================================================== */
+function summary(){const c=cu(),k=CT(),d=v=>v||'-';return`<div class="sum"><span>이용자명 <b>${esc(d(c.name))}</b></span><span>고객구분 <b>${d(tname(c.type))}</b></span><span>이용자코드 <b>${esc(d(c.code))}</b></span><span>대표 연락처 <b>${esc(d(fmtTel(c.hp||c.tel)))}</b></span><span>보유 계약 <b>${S.cust?(DB.ct[c.id]||[]).length+'건':'-'}</b></span><span>| 선택 계약 <b>${esc(d(k&&k.id))}</b></span><span>차량번호 <b>${esc(d(k&&k.plate))}</b></span><span>상태 <b>${esc(d(k&&k.status))}</b></span></div>`}
+
+/* 고객 단위 데이터. 저장 범위: 고객정보(기본·연락처·결제·발송·사업상태) */
+function custPanel(){const c=cu(),t=val('cust','type'),neu=S.mode==='new',I=(p,o)=>inp('cust',p,o),bz=t==='C'||(t==='S'&&POLICY.showSoleContact); // 담당자는 법인(설정 시 개인사업자) 대상
+ const ad=p=>[['zip','우편번호'],['road','도로명 기본'],['roadDtl','도로명 상세'],['jibun','지번 기본'],['jibunDtl','지번 상세']].map(([k,ph])=>I(p+'.'+k,{ph})).join('');
+ const nt=(k,l)=>I('notif.'+k,{t:'chk',lb:l});
+ return sec('고객 기본정보 <small class="mu">(저장 범위: 고객정보)</small>',`<div class="g">`
+ +F('이용자명',I('name'),{k:1})+F('고객구분',I('type',{t:'sel',o:CODES.custType,blank:false,r:1}))+F('이용자코드',neu?'<span class="mu">저장 시 mock 채번</span>':esc(c.code))
+ +F('생년월일(앞6자리)',I('birth6',{ph:'YYMMDD',n:1,ro:t==='C'}))+F('사업자등록번호',I('bizNo',{f:fmtBiz,ph:'000-00-00000',ro:t==='P'}))+F('대표자명',I('rep',{ro:t==='P'}))
+ +F('국적',I('nation'))+F('연대보증인명',I('guarantor',{ro:t!=='C'}))+(POLICY.showTxType?F('거래선구분',I('txType',{ro:1})):F('',''))
+ +F('전화번호',I('tel',{f:fmtTel}))+F('HP번호',I('hp',{f:fmtTel}))+F('E-mail',I('email'))
+ +F('주소1 사업장/직장',ad('a1'),{k:1,w:1})+F('주소2 청구지주소',ad('a2'),{k:1,w:1}) // NOTE: 주소1을 AS소재지로 자동 복사하지 않음
+ +F('담당자명(법인)',I('contact.name',{ro:!bz}))+F('담당자 TEL',I('contact.tel',{f:fmtTel,ro:!bz}))+F('담당자 H.P',I('contact.hp',{f:fmtTel,ro:!bz}))
+ +F('가상계좌',I('vAcct.bank',{ro:1})+I('vAcct.no',{ro:1}))+F('출금계좌',I('wAcct.bank')+I('wAcct.no',{f:maskAcct}))+F('법칙금유형',I('penalty',{t:'cg',o:CODES.penalty})) // 가상계좌 발급 기능 없음
+ +F('청구서 종류',I('bill',{t:'cg',o:CODES.bill}))+F('이동통신사',I('carrier',{t:'sel',o:CODES.carrier}))+F('휴폐업',I('bizState',{t:'cg',o:CODES.bizState,ro:t==='P'}))
+ +F('확인일자',I('bizDate',{t:'date',ro:t==='P'}))+F('SMS발송설정',nt('sms','SMS발송여부')+nt('smsMonthly','SMS월안내신청')+nt('precall','프리콜거부고객')+nt('smsRemain','SMS잔여회차안내')+nt('lms','LMS발송여부'),{h:1})
+ +`</div>`,acts('cust','고객정보',PERM.custEdit))}
+
+function ctList(){const L=DB.ct[cu().id]||[];
+ return sec(`고객 계약 목록 (${L.length}건)`,tbl(['','계약번호','계약상품','상품명','M/T 상품','차량번호','차량명','계약기간','월 납입금','현재 상태'],L.map(k=>`<tr tabindex="0" class="${k.id===S.ctId?'sel':''}" data-a="ct:${esc(k.id)}"><td>${k.id===S.ctId?'●':'○'}</td><td>${esc(k.id)}${k.exec.some(r=>r.prev)?`<br><small class="mu">기존 ${esc(k.exec.filter(r=>r.prev).map(r=>r.prev).join(', '))}</small>`:''}</td><td>${esc(k.kind)}</td><td>${esc(k.prod)}</td><td>${esc(k.mtProduct)}</td><td>${esc(k.plate)}</td><td>${esc(k.car)}</td><td>${k.start} ~ ${k.end}</td><td class="r">${W(k.monthly)}</td><td>${esc(k.status)}</td></tr>`)))+(S.ctId?'':'<p class="hint">업무 대상 계약을 선택하면 상세정보가 표시됩니다.</p>')}
+
+function tabs(){const k=ck();return`<section>${tabCt(k)}</section><section id="sec-ins">${tabIns(k)}</section><section id="sec-exec">${tabExec(k)}</section><section>${tabMt(k)}</section>`}
+
+/* 계약 단위. 저장 범위: 계약·차량정보. 상품명은 계약 시점 값을 보존(상품 마스터 변경 영향 없음) */
+function tabCt(k){const I=(p,o)=>inp('ct',p,o);
+ return`<div class="st"><span>• 계약정보 <small class="mu">(계약 단위 · 저장 범위: 계약정보)</small></span><span class="bt">${acts('ct','계약정보',PERM.ctEdit)}</span></div><div class="g">`
+ +F('계약번호',I('id',{ro:1}),{k:1})+F('계약상품',I('kind',{ro:1}))+F('사용본거지',I('base',{t:'sel',o:CODES.base}))
+ +F('상품명',I('prod'),{h:1})+F('현재 상태',I('status',{ro:1})) // NOTE: 상품명은 계약 시점 값 보존
+ +F('계약 시작일',I('start',{t:'date'}))+F('계약 종료일',I('end',{t:'date'}))+F('계약기간(개월)',I('months',{n:1}))
+ +F('제조사',I('maker'))+F('차량명',I('car'))+F('모델명',I('model'))
+ +F('차량등록일자',I('regDate',{t:'date'}))+F('최초주행거리',I('firstKm',{n:1,f:K}))+F('차량번호',I('plate'),{k:1})
+ +F('차대번호',I('vin'))+F('보증금',I('deposit',{n:1,f:W}))+F('선납금',I('prepaid',{n:1,f:W}))
+ +F('잔존가',I('residual',{n:1,f:W}))+F('월 납입금',I('monthly',{n:1,f:W}))+F('약정거리(마일리지)',I('agreedKm',{n:1,f:K}))
+ +F('약정거리 기준',I('kmBasis',{t:'sel',o:CODES.kmBasis}))+F('초과 km당 금액',I('overKm',{n:1,f:W,ph:'미확정(직접 입력)'}))+F('잔가업체',I('resVendor',{t:'sel',o:CODES.resVendor}))
+ +F('M/T 업체',I('mtVendor',{ro:1}))+F('M/T 상품',I('mtProduct',{t:'sel',o:CODES.mtProduct}),{h:1})+`</div>`}
+
+/* 보험·운전자. 저장 시에만 변경이력 생성(취소/실패는 이력 없음) */
+function tabIns(k){const I=(p,o)=>inp('ins',p,o),e=S.edit.ins,d=e?S.d.ins:k.ins,pd=POLICY.driver,pv=v=>v==null?'정책 미설정':v,c=cu(),dr=e&&d.drivers[S.drv]||{};
+ return`<div class="st"><span>• 보험조건 <small class="mu">(저장 범위: 보험 + 지정운전자 + 변경이력)</small></span><span class="bt">${acts('ins','보험·운전자',PERM.drvChange)}</span></div><div class="g">`
+ +F('보험사',I('company',{t:'sel',o:CODES.insurer}),{k:1})+F('보험연령 조건',I('age',{t:'sel',o:CODES.age,blank:false}))+F('대인','무한')
+ +F('보험 시작일',I('start',{t:'date'}))+F('보험 종료일',I('end',{t:'date'}))+F('대물',I('daemul',{t:'sel',o:CODES.daemul,blank:false}))
+ +F('면책금',I('deduct',{t:'sel',o:CODES.deduct,blank:false}))+F('임직원특약',I('emp',{t:'chk',lb:'가입'})+(c.type!=='P'?'<span class="mu">사업자 고객 가입 검토 항목. 미가입 시 추가운전자 지정 안내 — 가입 조건·지정 인원·변경 횟수 미확정(TODO)</span>':''),{h:1})+`</div>`
+ +`<div style="font-weight:700;margin:12px 0 4px">• 추가운전자 정보</div>`
+ +tbl(['성명','생년월일','관계','최종변경일'],d.drivers.map((r,i)=>`<tr${e?` tabindex="0" data-a="dsel:${i}"`:''} class="${i===S.drv?'sel':''}"><td>${esc(r.name)}</td><td>${r.birth}</td><td>${esc(r.rel)}</td><td>${r.at}</td></tr>`))
+ +(e?`<div class="g" style="margin-top:4px">${F('성명',`<input id="dn" value="${esc(dr.name)}">`)}${F('생년월일',`<input id="db" value="${esc(dr.birth)}" placeholder="YYYY-MM-DD">`)}${F('관계',`<select id="dr">${CODES.rel.map(x=>`<option${dr.rel===x?' selected':''}>${x}</option>`).join('')}</select>`)}${F('변경 사유','<input id="dw">')}${F('작업',`<button class="b" data-a="drv:add">추가</button><button class="b" data-a="drv:mod">수정 적용</button><button class="b" data-a="drv:rel"${POLICY.allowRelease?'':' disabled'}>지정 해제</button>`,{h:1})}</div><p class="hint">목록에서 행을 선택해 수정/해제합니다. 저장 시 변경이력 ${d.pend.length}건이 생성됩니다.</p>`:'')
+ +`<div style="margin:10px 0 2px 8px">└ 운전자 변경이력</div>`
+ +histView(k.hist)}
+function drvOp(op){const d=S.d.ins,g=i=>$('#'+i).value.trim(),n=g('dn'),b=g('db'),r=g('dr'),why=g('dw'),i=S.drv,o=d.drivers[i],t=today();
+ if(op!=='rel'&&(!n||!/^\d{4}-\d{2}-\d{2}$/.test(b)))return toast('성명과 생년월일(YYYY-MM-DD)을 확인하세요','e');
+ if(op==='add'){const m=POLICY.driver.max;if(m!=null&&d.drivers.length>=m)return toast('최대 지정 인원 초과','e');d.drivers.push({name:n,birth:b,rel:r,at:t});d.pend.push({type:'추가',who:n,bf:'',af:`${b}/${r}`,why})}
+ else{if(!o)return toast('목록에서 운전자를 선택하세요','e');
+  if(op==='mod'){d.drivers[i]={name:n,birth:b,rel:r,at:t};d.pend.push({type:'수정',who:o.name,bf:`${o.name}/${o.birth}/${o.rel}`,af:`${n}/${b}/${r}`,why})}
+  else{d.drivers.splice(i,1);d.pend.push({type:'지정 해제',who:o.name,bf:`${o.birth}/${o.rel}`,af:'',why})}}
+ S.drv=-1;S.dirty.ins=true;render()}
+
+/* 실행내역: 조회 전용. 이력은 상태 변경 이벤트 저장 시 서버가 누적(여기선 mock) */
+/* 실행내역 컬럼은 요청 항목 그대로(계약번호~납부방법). 공증구분의 실제 값 목록은 미확정 — 화면의 '공증/미해당'은 샘플값(TODO: 확인 후 교체) */
+const EXC=[['id','계약번호'],['date','실행일자'],['st','최종상태'],['period','기간'],['acq','취득원가',1],['plan','수납계획일'],['term','해지일자'],['mat','만기일자'],['close','종결일자'],['unrec','미회수원금',1],['remain','잔여선납금',1],['notary','공증구분'],['mid','채권담당자 사번'],['mnm','채권담당자 이름'],['pay','납부방법']];
+function tabExec(k){const L=k.exec.slice().sort((a,b)=>b.date.localeCompare(a.date));
+ return`<div class="st"><span>• 실행내역 <small class="mu">(조회 전용 · 현재 계약 상태: <b>${esc(k.status)}</b> / 표의 '최종상태'는 각 실행 시점 값)</small></span></div>`
+ +tbl(EXC.map(c=>c[1]),L.map(r=>`<tr>${EXC.map(([p,,n])=>`<td${n?' class="r"':''}>${p==='id'?esc(r.id||k.id)+(r.prev?` <small class="mu">(기존 ${esc(r.prev)})</small>`:''):esc(n?num(r[p]):r[p])}</td>`).join('')}</tr>`),'ex')}
+
+/* ===== M/T 가입정보 =====
+ '고객이 가입한 M/T'의 정보를 보여주는 영역. 대부분 고객·계약·차량·보험 원본에서 연동되는 읽기 전용 값이며,
+ M/T 전용 입력 항목(법인등록번호·업종·업태·검사주기예외·AS담당자/소재지·담보 예/아니오·담보사망한도·차량가격·대체교통비·검사일)만 수정한다.
+ 화면에는 운영자가 읽는 표시값만 노출하고, 전송 규격은 각 줄 주석에 기록한다(실제 변환은 내부 백엔드 어댑터가 VPN 경유로 수행).
+ add(그룹, 항목명, 표시값, 전송값, 표시값이 입력창(HTML)인지) — 전송값은 mock 검증용으로만 계산하며 화면에는 노출하지 않는다.
+ 화면 항목명에서는 '코드'를 뺀다(코드는 개발자 전송용). 대응 전송 필드명: 비즈니스유형코드·MT차명코드·차량등급코드·차적지코드·보험사코드·보험연령코드·대체교통비용코드
+ TODO: 전송 영문 키·필수 여부·길이 제한·null 처리·API 주소는 오픈링크 명세 수신 후 반영 */
+const MTX={yn:[['Y','예'],['N','아니오']]};
+const MT_CAR={'그랑콜레오스':['MTC001','0007','중형 SUV'],'필랑트':['MTC002','0007','중형 SUV'],'아르카나':['MTC003','0006','준중형 SUV'],'QM6':['MTC004','0007','중형 SUV']}; // 차량명→[MT차명코드, 차량등급코드(숫자4자 문자열), 등급명]. TODO: 오픈링크 코드표 수신 후 교체(현재 샘플)
+const MT_REG={'고흥':'0003','연천':'0004'}; // 사용본거지→차적지코드(숫자4자 문자열). TODO: 매핑 확인
+const INS_CODE={}; // 보험사명→보험사코드(비즈니스파트너번호). TODO: 공식 코드 수신 후 입력(임의 생성 금지)
+function mtRows(){const c=cu(),k=ck(),i=k.ins,has=!!CT(),mc=MT_CAR[k.car]||[],R=[],V=p=>val('mt',p),E=(p,o)=>inp('mt',p,o),YN=p=>E(p,{t:'sel',o:MTX.yn,blank:false});
+ const add=(g,lb,disp,send,h)=>{const o=send&&typeof send==='object'?send:{v:send},s=o.v??'';R.push({g,lb,disp:h?disp:esc(disp),send:s,err:o.e,miss:MT_REQ.includes(lb)&&!o.e&&s===''})};
+ add('0','M/T 업체',k.mtVendor,'');   // 오픈링크 고정
+ add('0','M/T 상품',k.mtProduct,'');  // 셀프/스탠다드 등: 계약정보의 M/T 상품
+ add('0','가입 계약번호',k.id,'');
+ add('A','고객번호',c.code,c.code);                                        // 전송: 문자열. 이용자코드를 연동(별도 고객번호 체계가 있으면 매핑 교체)
+ add('A','비즈니스유형',tname(c.type),MT_BIZ[c.type]);                 // 전송: "0001"(개인) "0002"(개인사업자) "0004"(법인사업자), 문자열
+ add('A','법인명',c.type==='C'?c.name:'',c.type==='C'?c.name:'');
+ add('A','법인등록번호',E('corpNo'),V('corpNo'),1);                        // 사업자등록번호와 별개 필드
+ add('A','고객명',c.name,c.name);
+ const a=c[MT_ADDR_SRC];[['우편번호','zip'],['기본주소(도로명)','road'],['상세주소(도로명)','roadDtl'],['기본주소(지번)','jibun'],['상세주소(지번)','jibunDtl']].forEach(([l,p])=>add('A','고객'+l,a[p],a[p])); // 주소1/2 중 전송 대상은 MT_ADDR_SRC
+ add('A','고객유선전화번호',fmtTel(c.tel),dig(c.tel));                      // 전송: 숫자만(하이픈 여부 명세 확인 필요)
+ add('A','고객무선전화번호',fmtTel(c.hp),dig(c.hp));
+ add('A','사업자등록번호',c.type==='P'?'':fmtBiz(c.bizNo),c.type==='P'?'':dig(c.bizNo)); // 전송: 숫자 10자리
+ add('A','대표자명',c.rep,c.rep);
+ add('A','업종명',E('industry'),V('industry'),1);
+ add('A','업태명',E('bizCond'),V('bizCond'),1);
+ add('B','차대번호',k.vin,k.vin);                                           // 차량정보 연동(수정은 계약정보)
+ add('B','차량번호',k.plate,k.plate);
+ add('B','MT차명',has?k.car+' '+k.model:'',mc[0]||'');                  // 화면: 차명 / 전송: MT업체 제공 코드(MT_CAR)
+ add('B','차량등급',mc[2]||'',mc[1]||'');                               // 화면: 등급명 / 전송: 숫자 4자 문자열("0007"). 숫자 7로 바꾸면 안 됨(선행 0)
+ add('B','차량등록일자',k.regDate,ymd(k.regDate));                          // 전송: YYYYMMDD
+ add('B','차적지',k.base,MT_REG[k.base]||'');                           // 화면: 사용본거지 / 전송: 숫자 4자 문자열
+ add('B','위탁사계약번호',k.id,k.id);                                       // 계약정보 연동
+ add('B','MT계약시작일자',k.start,ymd(k.start));                            // 전송: YYYYMMDD (예 20261023)
+ add('B','MT계약종료일자',k.end,ymd(k.end));
+ add('B','계약주행거리(km)',K(k.agreedKm),String(k.agreedKm));              // 약정거리 연동. 전송: ',' 없는 숫자. 연간/전체 기준 미확정 → 변환 없이 그대로
+ add('B','최초주행거리(km)',K(k.firstKm),String(k.firstKm));                // 전송: ',' 없는 숫자
+ add('B','검사주기예외여부',E('kmExempt',{t:'sel',o:MTX.yn,blank:false}),V('kmExempt'),1); // 화면 예/아니오 → 전송 "Y"/"N"
+ [['AS담당자명','asName'],['AS담당자유선전화번호','asTel'],['AS담당자무선전화번호','asHp'],['AS소재지우편번호','as.zip'],['AS소재지기본주소(도로명)','as.road'],['AS소재지상세주소(도로명)','as.roadDtl'],['AS소재지기본주소(지번)','as.jibun'],['AS소재지상세주소(지번)','as.jibunDtl']].forEach(([l,p])=>add('C',l,E(p),V(p),1)); // 법인 담당자와 별개 개념, 계약 후 입력
+ add('D','보험시작일자',i.start,ymd(i.start));                              // 전송: YYYYMMDD
+ add('D','보험종료일자',i.end,ymd(i.end));
+ add('D','보험사',i.company,INS_CODE[i.company]||'');                    // 화면: 보험사명 / 전송: 보험사코드(비즈니스파트너번호)
+ add('D','보험연령',(CODES.age.find(x=>x[0]===i.age)||[])[1]||'',i.age); // 전송: "0020"(21세) "0030"(26세) 문자열
+ [['대인담보여부','cv.dain'],['대물담보여부','cv.daemul'],['자손담보여부','cv.self'],['자차보험가입여부','cv.car'],['무보험차량상해가입여부','cv.unins'],['긴급출동가입여부','cv.emerg'],['렌터카담보특약가입여부','cv.rent']].forEach(([l,p])=>add('D',l,YN(p),V(p),1)); // 화면 예/아니오 → 전송 "Y"/"N"
+ add('D','임직원특약가입여부',has?(i.emp?'예':'아니오'):'',has?(i.emp?'Y':'N'):''); // 보험조건의 임직원특약에서 연동
+ add('D','신차보상특약가입여부',YN('cv.newcar'),V('cv.newcar'),1);
+ add('D','대인무한담보금액',has?'무한':'','');                               // 전송: 만원 단위. '무한'에 대응하는 전송값 미제공 → 0 등 임의 매핑 금지(확인 필요)
+ add('D','대물담보한도금액',has?((CODES.daemul.find(x=>+x[0]===+i.daemul)||[])[1]||num(i.daemul))+'원':'',won2(i.daemul,1e4)); // 화면: 원 단위 / 전송: 만원(나누어떨어지지 않으면 오류, 반올림 안 함)
+ add('D','담보사망한도금액',E('deathWon',{n:1,f:W}),won2(V('deathWon'),1e4),1); // 화면: 원 / 전송: 만원
+ add('D','차량가격',E('carPriceWon',{n:1,f:W}),won2(V('carPriceWon'),1e3),1);   // 화면: 원 / 전송: 천원
+ add('D','대체교통비용',E('alt',{t:'sel',o:CODES.alt,blank:false}),V('alt'),1); // 전송: "0001"없음 "0002"1만원 "0003"2만원 "0004"3만원
+ add('D','면책금',W(i.deduct),String(i.deduct));                            // 전송: 원 단위
+ add('E','차기정기검사일자',E('nextInsp',{t:'date'}),ymd(V('nextInsp')),1);   // 전송: YYYYMMDD. 계산 규칙 미제공 → 자동 계산 안 함
+ add('E','차기정밀검사일자',E('nextPrec',{t:'date'}),ymd(V('nextPrec')),1);
+ return R}
+function tabMt(k){const st=k.mtSt,R=mtRows(),ed=S.edit.mt,has=!!CT(),SN={none:'미연동',ready:'전송 준비',proc:'처리 중',ok:'성공',fail:'실패'},GN={'0':'가입 M/T',A:'고객·사업자',B:'차량·계약',C:'AS 담당자·소재지',D:'보험·담보',E:'검사 일정'};
+ let g='',cells='';
+ R.forEach(r=>{if(r.g!==g){g=r.g;cells+=`<div class="gh">${GN[g]}${g==='C'&&ed?' <button class="b" data-a="cp:ct">법인 담당자 복사</button> <button class="b" data-a="cp:ad">주소1 복사</button>':''}</div>`}
+  cells+=F(r.lb,r.disp+(r.err?`<small class="err">${esc(r.err)}</small>`:''))});
+ return`<div class="st"><span>• M/T 가입정보 <small class="mu">(저장 범위: M/T 전용 입력 항목 · 계약·차량·보험에서 가져온 값은 읽기 전용)</small></span><span class="bt">${acts('mt','M/T 전용정보',PERM.mtSend)}</span></div>`
+ +`<div class="g">${cells}</div>`
+ +`<details style="margin-top:6px"><summary class="mu">연동 상태·전송 (개발용 mock · 실제 VPN 미연결)</summary><div class="g" style="margin-top:4px">`
+ +F('연동 상태',`<b class="pill s-${st.status}">${SN[st.status]}</b> <small class="mu">내부 관리 상태(공식 응답코드 아님)</small>`,{h:1})+F('연동 모드','mock')
+ +F('실제 VPN 연결','<b class="err">미연결</b> <small class="mu">내부 백엔드 경유 예정</small>',{h:1})+F('응답코드',esc(st.code)||'없음')
+ +F('최근 시도일시',st.last||'없음')+F('최근 성공일시',st.lastOk||'없음')+F('응답메시지',esc(st.msg)||'없음')
+ +F('검증 결과',esc(st.verify),{w:1})
+ +F('실행',`<button class="b" data-a="ver"${ed||!has?' disabled':''}>검증</button><button class="b p" data-a="send"${ed||!has||!PERM.mtSend||st.status==='proc'?' disabled':''}>mock 전송</button><button class="b" disabled title="연동 명세·운영 권한 확인 전까지 비활성">실제 전송(비활성)</button>${ed?'<small class="mu">저장 후 전송 가능</small>':''}`,{w:1})+`</div></details>`}
+async function mtSend(){const st=CT().mtSt;st.status='proc';st.last=now();render();await delay(600);
+ const bad=mtRows().filter(r=>r.miss||r.err);
+ if(bad.length)Object.assign(st,{status:'fail',verify:`누락/오류 ${bad.length}건: `+bad.map(r=>r.lb).join(', '),code:'MOCK-E01',msg:'mock 검증 실패(오픈링크 공식 응답 아님)'});
+ else Object.assign(st,{status:'ok',lastOk:st.last,verify:'통과',code:'MOCK-OK',msg:'mock 성공 응답(실제 전송 아님)'});render()}
+
+/* 상담내역: 고객 단위 조회, 계약 연결 선택. 저장은 기록만 하며 LMS 등 업무 실행과 분리 */
+function csPanel(){const L=DB.cs[cu().id]||[],f=S.csF,N=5,CC=CODES.cs,I=(p,o)=>inp('cs',p,o),e=S.edit.cs;
+ const R=L.filter(r=>(!f.from||r.date>=f.from)&&(!f.to||r.date<=f.to)&&(!f.dept||r.dept===f.dept)&&(!f.by||r.counselor===f.by)&&(!f.tag||r.tags.includes(f.tag))).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+ const pages=Math.max(1,Math.ceil(R.length/N));S.pg=Math.min(S.pg,pages-1);const sel=L.find(r=>r.id===S.csSel);
+ const fs=(k,o)=>`<select data-f="${k}" aria-label="${k}"><option value="">전체</option>${o.map(x=>`<option${f[k]===x?' selected':''}>${esc(x)}</option>`).join('')}</select>`;
+ const d=S.d.cs||{},det=CC.detail[d.content]||[...new Set(Object.values(CC.detail).flat())];
+ return sec('상담내역 <small class="mu">(고객 단위 · 저장 범위: 상담)</small>',
+ `<div class="sbar">기간 <input type="date" data-f="from" value="${f.from||''}" style="width:130px"> ~ <input type="date" data-f="to" value="${f.to||''}" style="width:130px"> 부서 ${fs('dept',CC.dept)} 상담자 ${fs('by',[...new Set(L.map(r=>r.counselor))])} 태그 ${fs('tag',CC.tags)}</div>`
+ +tbl(['상담일시','유형','상담부서','내용','상세내용','결과','상담자','특이','메모 요약'],R.slice(S.pg*N,S.pg*N+N).map(r=>`<tr tabindex="0" class="${r.id===S.csSel?'sel':''}" data-a="sel:cs:${r.id}"><td>${r.date} ${r.time}</td><td>${r.type}</td><td>${r.dept}</td><td>${r.content}</td><td>${r.detail}</td><td>${r.result}</td><td>${esc(r.counselor)}</td><td>${r.special?'●':''}</td><td>${esc(r.memo.slice(0,20))}</td></tr>`))
+ +`<div class="bt" style="margin:4px 0"><button class="b" data-a="pg:-1"${S.pg?'':' disabled'}>이전</button><span>${S.pg+1} / ${pages}</span><button class="b" data-a="pg:1"${S.pg<pages-1?'':' disabled'}>다음</button></div>`
+ +(sel&&!e?`<div class="g">${F('상담일시',sel.date+' '+sel.time)}${F('등록일시',sel.regAt)}${F('전화번호',esc(sel.phone))}${F('연결 계약',esc(sel.ct)||'없음(고객 수준)')}${F('상담자',esc(sel.counselor))}${F('응답자·결과',`${sel.resp} / ${sel.result}`)}${F('분류',`${sel.kind} / ${sel.dept} / ${sel.type} / ${sel.method}`,{h:1})}${F('내용',`${sel.content} > ${sel.detail}`)}${F('특이사항·태그',(sel.special?'특이사항 ● ':'')+esc(sel.tags.join(', ')),{w:1})}${F('메모',esc(sel.memo),{w:1})}</div>`:'')
+ +`<div class="g${e?'':' off'}" id="csform" style="margin-top:6px">${F('상담일자',I('date',{t:'date'}),{k:1})}${F('상담시간',I('time',{ph:'HH:MM'}))}${F('전화번호',I('phone'))}${F('구분',I('kind',{t:'sel',o:CC.kind,blank:false}))}${F('상담부서',I('dept',{t:'sel',o:CC.dept}))}${F('유형',I('type',{t:'sel',o:CC.type}))}${F('상담방법',I('method',{t:'sel',o:CC.method}))}${F('내용',I('content',{t:'sel',o:CC.content,r:1}))}${F('상세내용',I('detail',{t:'sel',o:CS_CASCADE?det:[...new Set(Object.values(CC.detail).flat())]}))}${F('응답자 구분',I('resp',{t:'sel',o:CC.resp}))}${F('결과',I('result',{t:'sel',o:CC.result}))}${F('등록일자','<span class="mu">저장 시 자동</span>')}${F('상담자명',I('counselor'))}${F('연결 계약번호',I('ct',{t:'sel',o:(DB.ct[cu().id]||[]).map(k=>[k.id,k.id+' / '+k.plate])}))}${F('특이사항',I('special',{t:'chk',lb:'특이사항 있음'}))}${F('업무 태그',CC.tags.map(t=>I('tg.'+t,{t:'chk',lb:t})).join(''),{w:1})}${F('메모내용',I('memo',{t:'ta'}),{w:1})}</div>`
+ +`<p class="hint">${e?'상담 저장은 기록만 남깁니다. 태그를 선택해도 LMS 발송·자동이체일자 변경·고객정보 변경은 실행되지 않습니다(별도 업무 기능).':'▶ 상담 입력란은 [추가] 버튼을 누르면 활성화됩니다.'}</p>`
+ ,e?`<button class="b p" data-a="save:cs"${S.busy?' disabled':''}>${S.busy?'저장 중…':'상담 저장'}</button><button class="b" data-a="cancel:cs">취소</button>`:`<button class="b" data-a="add:cs"${PERM.csAdd&&S.cust?'':' disabled'}>추가</button><button class="b" data-a="csedit"${sel&&PERM.csAdd?'':' disabled'}>수정</button>`)}
+
+/* =====================================================================
+ 7. 검증 / 저장(COMMIT) — 저장 성공 후에만 상태 반영·이력 생성
+ ===================================================================== */
+const reD=/^\d{4}-\d{2}-\d{2}$/,reNum=/^\d*$/;
+const VAL={
+ cust(){const d=S.d.cust,e={};if(!d.name.trim())e['cust.name']='이용자명을 입력하세요';
+  if(d.type!=='C'&&d.birth6&&!/^\d{6}$/.test(d.birth6))e['cust.birth6']='앞 6자리 숫자만 입력(뒷자리 입력 금지)';
+  if(d.type!=='P'&&d.bizNo&&dig(d.bizNo).length!==10)e['cust.bizNo']='사업자등록번호 10자리';
+  if(d.email&&!/^\S+@\S+\.\S+$/.test(d.email))e['cust.email']='이메일 형식 확인';
+  if(d.hp&&![10,11].includes(dig(d.hp).length))e['cust.hp']='휴대전화번호 형식 확인';return e},
+ ct(){const d=S.d.ct,e={};if(d.start&&d.end&&d.start>d.end)e['ct.end']='종료일이 시작일보다 빠릅니다';
+  ['months','firstKm','deposit','prepaid','residual','monthly','agreedKm','overKm'].forEach(p=>{const v=String(d[p]).trim();if(v!==''&&!/^\d+$/.test(v))e['ct.'+p]='0 이상의 숫자만 입력'});return e},
+ ins(){const d=S.d.ins,e={};if(d.start&&d.end&&d.start>d.end)e['ins.end']='종료일이 시작일보다 빠릅니다';return e},
+ mt(){const d=S.d.mt,e={};['contractKm','deathWon','carPriceWon'].forEach(p=>{if(!reNum.test(String(d[p])))e['mt.'+p]='숫자만 입력'});['region'].forEach(p=>{if(d[p]&&!/^\d{4}$/.test(d[p]))e['mt.'+p]='숫자 4자리 문자열'});return e},
+ cs(){const d=S.d.cs,e={};if(!reD.test(d.date))e['cs.date']='상담일자를 선택하세요';if(!/^\d{2}:\d{2}$/.test(d.time))e['cs.time']='HH:MM 형식';if(d.phone&&dig(d.phone).length<8)e['cs.phone']='전화번호 확인';return e}};
+const NUMK=['months','firstKm','deposit','prepaid','residual','monthly','agreedKm','overKm'];
+const COMMIT={
+ cust(){const n=Object.assign(S.cust,S.d.cust);if(S.mode==='new'){n.id='U'+(DB.cust.length+1);n.code='MOCK-N'+String(DB.cust.length+1).padStart(4,'0'); // 운영 채번 규칙 미정(mock)
+   DB.cust.push(n);DB.ct[n.id]=[];DB.cs[n.id]=[];S.mode=null}},
+ ct(){const d=S.d.ct;NUMK.forEach(p=>d[p]=String(d[p]).trim()===''?'':Number(d[p]));Object.assign(CT(),d)},
+ ins(){const{pend,...r}=S.d.ins,k=CT();pend.forEach(p=>k.hist.unshift({...p,at:now(),by:'데모처리자'}));Object.assign(k.ins,r,{daemul:Number(r.daemul),deduct:Number(r.deduct)})}, // 이력은 저장 성공 시점에만 생성
+ mt(){Object.assign(CT().mt,S.d.mt)},
+ cs(){const d=S.d.cs,L=(DB.cs[cu().id]=DB.cs[cu().id]||[]),tags=Object.keys(d.tg).filter(k=>d.tg[k]),o=d.id&&L.find(x=>x.id===d.id);
+  if(o){Object.assign(o,d,{tags});delete o.tg} // 기존 상담 수정: 등록일시 유지
+  else{const id='CS'+Date.now();L.unshift({...d,id,tags,regAt:now()});S.csSel=id}}};
+VAL.term=()=>{const d=S.d.term,e={};if(d.baseDate&&!reD.test(d.baseDate))e['term.baseDate']='날짜 형식 확인';if(d.takeDate&&!reD.test(d.takeDate))e['term.takeDate']='날짜 형식 확인';if(d.ret==='미반납'&&d.takeDate&&d.baseDate&&d.takeDate<d.baseDate)e['term.takeDate']='인수일이 해지기준일보다 빠릅니다';return e};
+COMMIT.term=()=>{const d=S.d.term;if(d.ret!=='미반납')d.takeDate='';Object.assign(CT().term,d)}; // 미반납일 때만 인수일 보관
+async function save(sc){if(S.busy)return;S.err=VAL[sc]();if(Object.keys(S.err).length){render();return toast('입력값을 확인하세요','e')}
+ S.busy=true;render();
+ try{await api.commit(COMMIT[sc]);S.edit[sc]=false;delete S.d[sc];S.dirty[sc]=false;S.err={};toast('저장 완료 (데모: 메모리에만 저장)')}
+ catch(x){toast('저장 실패: '+x.message+' — 입력값은 유지됩니다','e')}
+ finally{S.busy=false;render()}}
+
+/* =====================================================================
+ 8. 화면 조립·이벤트
+ ===================================================================== */
+/* ===== 우측 업무 기능 버튼 (기존 시스템 화면 우측 메뉴와 동일 구성) =====
+ [버튼명, 동작종류, 대상]  동작종류: sms/lms=문자 발송(mock) · hist=문자발송이력 · go=해당 영역으로 이동 · ins=보험조건 수정 모드로 이동 · 없음=미연결 안내
+ TODO: 미연결 버튼은 실제 업무 화면(팝업/라우트) 또는 내부 API로 교체. 호출 시 넘길 대상은 이용자코드 + 선택 계약번호(fnOpen 참고).
+ NOTE: 문자 발송은 이 프로토타입에서 실제 전송하지 않고 발송이력에만 기록한다(api 연동 지점: smsDlg 의 '발송' 버튼 핸들러). 버튼 활성화는 화면 제어일 뿐 실제 권한은 서버에서 검증 */
+const FN=[['e-Fax 조회'],['법인함'],['수납종합관리'],['수납처리'],['연체상세'],['공증(증서담보)'],['확인서발급'],['마케팅정보'],['계좌관리'],['실행화면','go','sec-exec'],['SMS발송','sms'],['LMS발송','lms'],['문자발송이력','hist'],['스케쥴표출력'],['승계서류출력'],['이전서류요청'],['다계약건조회','go','sec-ct'],['이미지Fax전송'],['해지예정통보(계)'],['해지예정통보(보)'],['해지통보(계)'],['보험연령변경','ins']];
+function renderFn(){const on=S.cust&&S.mode!=='new';$('#fn').innerHTML=FN.map(([l],i)=>`<button class="b" data-a="fn:${i}"${on?'':' disabled'}>${esc(l)}</button>`).join('')} // 고객 선택 전·신규 등록 중에는 비활성
+const goTo=id=>{const e=document.querySelector('#'+id);e&&e.scrollIntoView&&e.scrollIntoView({behavior:'smooth',block:'start'})};
+function modal(title,body,foot,w){const o=$('#ov');o.innerHTML=`<div class="mdl wide${w?' '+w:''}" role="dialog" aria-modal="true"><div class="st"><b>${esc(title)}</b><button class="b" id="mx">닫기</button></div>${body}${foot?`<div class="bt" style="margin-top:8px;justify-content:flex-end">${foot}</div>`:''}</div>`;o.hidden=false;$('#mx').onclick=closeModal;const pr=$('#pr');if(pr)pr.onclick=()=>window.print();$('#mx').focus()}
+function closeModal(){const o=$('#ov');o.hidden=true;o.innerHTML=''}
+function fnOpen(i){const[l,t,x]=FN[i],c=S.cust,k=CT();if(!c)return;
+ if(t==='sms'||t==='lms')return smsDlg(t==='sms'?'SMS':'LMS');
+ if(t==='hist')return smsHist();
+ if(t==='go')return goTo(x);
+ if(t==='ins'){if(!k)return toast('계약을 선택하세요','e');if(!S.edit.ins)act('edit:ins');return goTo('sec-ins')} // 보험연령은 보험조건에서 수정
+ modal(l,`<p>'${esc(l)}' 기능은 별도 업무 화면/API 연동이 필요하며 이 프로토타입에서는 연결되어 있지 않습니다.</p><p class="mu">연결 시 전달할 대상 — 이용자 ${esc(c.name)}(${esc(c.code)}) · 계약 ${esc(k?k.id:'미선택')}</p>`)}
+/* 문자 발송(mock). 고객정보의 'SMS발송여부/LMS발송여부'가 해제된 고객은 발송 불가. TODO: 발송 제한 정책(안내성/필수 안내 구분 등) 확인 */
+function smsDlg(type){const c=S.cust,L=type==='LMS',lim=L?2000:90,ok=L?c.notif.lms:c.notif.sms,nums=[['고객 휴대전화',c.hp],['법인 담당자 휴대전화',c.contact&&c.contact.hp]].filter(x=>x[1]);
+ modal(type+' 발송 — '+c.name,`<div class="g" style="grid-template-columns:92px 1fr">`
+  +F('수신번호',`<select id="sto">${nums.map(([l,n])=>`<option value="${esc(n)}">${l} ${esc(fmtTel(n))}</option>`).join('')||'<option value="">수신번호 없음</option>'}</select>`)
+  +(L?F('제목','<input id="ssub" maxlength="40">'):'')
+  +F('내용',`<textarea id="stx" style="height:96px" placeholder="${L?'장문 메시지(최대 2,000byte)':'단문 메시지(최대 90byte)'}"></textarea><small class="mu" id="sby" style="flex:1 0 100%">0 / ${lim} byte</small>`)
+  +F('발송 설정',ok?'발송 가능':`<span class="err">고객의 ${type} 발송여부가 해제되어 있어 발송할 수 없습니다(고객정보 &gt; 안내·발송 설정)</span>`)
+  +`</div><p class="hint">mock 발송: 실제 문자는 전송되지 않고 발송이력에만 기록됩니다.</p>`,
+  `<button class="b p" id="ssend"${ok?'':' disabled'}>발송(mock)</button>`);
+ const t=$('#stx'),by=()=>{const n=bytes(t.value);$('#sby').textContent=`${n} / ${lim} byte`;$('#sby').className=n>lim?'err':'mu'};t.oninput=by;
+ $('#ssend').onclick=async()=>{const v=t.value.trim(),to=$('#sto').value;
+  if(!to)return toast('수신번호가 없습니다','e');if(!v)return toast('내용을 입력하세요','e');
+  if(bytes(v)>lim)return toast(`${lim}byte를 초과했습니다`+(L?'':' — 긴 내용은 LMS발송을 이용하세요'),'e');
+  $('#ssend').disabled=true;await delay(400);
+  (DB.sms[c.id]=DB.sms[c.id]||[]).unshift({at:now(),type,to,sub:L?$('#ssub').value:'',text:v,by:'데모처리자',st:'발송(mock)'});
+  closeModal();toast(type+' 발송 기록 완료 (mock: 실제 전송 아님)')}}
+function smsHist(){const L=DB.sms[S.cust.id]||[];
+ modal('문자발송이력 — '+S.cust.name,tbl(['발송일시','구분','수신번호','내용','발송자','결과'],L.map(r=>`<tr><td>${r.at}</td><td>${r.type}</td><td>${esc(fmtTel(r.to))}</td><td style="white-space:normal;min-width:200px">${esc(r.sub?`[${r.sub}] `:'')+esc(r.text)}</td><td>${esc(r.by)}</td><td>${r.st}</td></tr>`)))}
+/* 운전자 변경이력: 간단한 한 줄 목록. 일시는 연한 보조 정보, 변경 내용은 '전 → 후'(수정은 바뀐 항목만)로 축약.
+   저장 필드(변경일시·유형·대상·전/후 값·처리자·사유)는 모두 보존 — 데이터는 hist[]에 그대로 있음 */
+function histView(L){const lb=['성명','생년월일','관계'],dsc=h=>{const b=(h.bf||'').split('/'),a=(h.af||'').split('/');
+  if(h.type==='수정')return b.map((x,i)=>x!==a[i]?`${lb[i]} ${esc(x)} → ${esc(a[i])}`:'').filter(Boolean).join(', ');
+  return esc((h.type==='추가'?h.af:h.bf).replace('/',' · '))};
+ return L.length?`<div class="hist">${L.map(h=>`<div><span class="mu">${h.at}</span> <b class="tg">${h.type}</b> ${esc(h.who)} <span class="mu">${dsc(h)} · ${esc(h.by)}${h.why?' · '+esc(h.why):''}</span></div>`).join('')}</div>`:'<div class="hist mu">이력 없음</div>'}
+function consultHtml(){return (S.cust?'':`<div class="empty" style="padding:8px;margin:6px 0">고객을 검색하거나 신규 고객을 등록해주세요.</div>`)+summary()+custPanel()+(S.mode==='new'?'':'<div id="sec-ct">'+ctList()+'</div>'+tabs()+csPanel())}
+function render(){renderNav();const v=S.view,cs=v==='consult';$('#fn').style.display=cs?'':'none';$('#newc').style.display=cs?'':'none';
+ $('#app').innerHTML=cs?consultHtml():v==='term'?termHtml():`<div class="empty" style="padding:24px">${VIEWS.find(x=>x[0]===v)[3]} 화면은 다음 단계에서 만들 예정입니다.</div>`;if(cs)renderFn()}
+/* ===== 화면(메뉴) 전환 =====
+ 상담관리 > 이용자종합상담 / LTR사후관리 > 중도해지(LTR)=LTR중도해지 자동차 · 만기관리(LTR)=LTR만기처리관리 · 승계관리(LTR)=LTR승계처리.
+ 검색 영역과 선택된 고객·계약(S.cust, S.ctId)은 화면 간 공유한다. TODO: 만기관리·승계관리 화면은 다음 단계에서 구현 */
+const VIEWS=[['consult','이용자종합상담','상담관리','이용자 종합 상담'],['term','중도해지(LTR)','LTR사후관리','LTR중도해지 자동차'],['expire','만기관리(LTR)','LTR사후관리','LTR만기처리관리'],['succ','승계관리(LTR)','LTR사후관리','LTR승계처리']];
+function renderNav(){const G=[...new Set(VIEWS.map(v=>v[2]))],cur=VIEWS.find(x=>x[0]===S.view);
+ $('#nav').innerHTML=G.map(g=>`<div class="mg${S.menu===g?' open':''}${S.shut===g?' shut':''}"><button class="mb${cur[2]===g?' on':''}" aria-haspopup="true" aria-expanded="${S.menu===g}" data-a="menu:${g}">${g} ▾</button><div class="msub" role="menu">${VIEWS.filter(v=>v[2]===g).map(v=>`<button class="mi${S.view===v[0]?' on':''}" role="menuitem" data-a="view:${v[0]}">${v[1]}</button>`).join('')}</div></div>`).join('');
+ $('#ttl').textContent=cur[3];
+ $('#exh').innerHTML=S.view==='term'?'테스트 예시: <b>홍길동</b>(연체 중인 계약), <b>홍길순</b>(종료된 계약)을 검색하면 정보를 확인할 수 있습니다.':'테스트 예시: <b>홍길동</b>, <b>00주식회사</b>를 검색하면 정보를 확인할 수 있습니다.'}
+$('#nav').onmouseleave=()=>{S.shut='';document.querySelectorAll('.mg.shut').forEach(e=>e.classList.remove('shut'))}; // 메뉴를 고른 뒤 커서가 벗어나면 다시 호버로 열림
+
+/* =====================================================================
+ 9. LTR 중도해지 자동차 (사후관리) — 계약 단위. 상단 버튼은 모두 팝업.
+    TERM 설정값은 확정 전 임시값. 스케줄·연체·청구금액 산식은 '데모 산식'이며 운영에서는 스케줄/정산 API로 교체한다.
+ ===================================================================== */
+const TERM={lateRate:0.15,   // 연체이율(연). 데모값 — TODO: 확정 이율로 교체
+ feeRate:null};              // 중도해지 위약금율. null = 정책 미설정(계산에서 제외하고 '정책 미설정'으로 표시, 0으로 해석 금지)
+const RENT_ST={'정상':'이용중','연체관리':'이용중(연체)','종료':'종료'};
+const dd=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5),addDays=(a,n)=>new Date(Date.parse(a)+n*864e5).toISOString().slice(0,10);
+const acqOf=k=>((k.exec||[]).find(r=>r.st==='승계')||(k.exec||[])[0]||{}).acq||0; // 취득원가: 실행내역(승계) 기준
+const lastPay=sc=>[...sc].reverse().find(r=>r.st==='수납')?.due||'';           // 마지막 수납일자(마지막 자동이체 수납)
+/* 납입 스케줄(데모 산식): 수납예정일=시작일+n개월, 원금=(취득원가-잔존가)/기간 균등, 이자=월 납입금-원금, 잔여원금=취득원가-누적원금.
+   수납상태: 오늘 이전 도래분=수납, k.late 만큼 최근 회차는 미수납(연체). TODO: 운영에서는 스케줄 API 값 사용 */
+function sched(k){const n=Number(k.months)||0,A=acqOf(k),tot=A-Number(k.residual||0),pr=n?Math.floor(tot/n/10)*10:0,T=today(),R=[];if(!n||!k.start)return R;
+ const[y,m,d]=k.start.split('-').map(Number);let cum=0;
+ for(let i=1;i<=n;i++){const mm=m-1+i,yy=y+Math.floor(mm/12),mo=mm%12+1,dy=Math.min(d,new Date(yy,mo,0).getDate()),due=`${yy}-${String(mo).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;
+  const p=i===n?tot-cum:pr;cum+=p;R.push({n:i,due,amt:Number(k.monthly),pr:p,it:Math.max(0,Number(k.monthly)-p),bal:A-cum,st:due>T?'미도래':'수납'})}
+ const dn=R.filter(r=>r.st==='수납').length;for(let i=Math.max(0,dn-(Number(k.late)||0));i<dn;i++)R[i].st='미수납';return R}
+/* 청구금액 시뮬레이션(데모 산식): 기준일까지 도래한 미납 렌트료 + 연체이자(미납금×연체이율×연체일수/365) + 잔여 원금(기준일 이후 미도래 원금+잔존가) [+ 위약금: 정책 확정 시] - 보증금 */
+function simulate(k,date){const sc=sched(k),due=sc.filter(r=>r.due<=date);let un=0,li=0,bal=acqOf(k),cnt=0;
+ due.forEach(r=>{bal=r.bal;if(r.st==='미수납'){cnt++;un+=r.amt;li+=Math.round(r.amt*TERM.lateRate*Math.max(0,dd(r.due,date))/365/10)*10}});
+ const fee=TERM.feeRate==null?null:Math.round(bal*TERM.feeRate/10)*10,dep=Number(k.deposit||0);
+ return{ct:k.id,date,total:un+li+bal+(fee||0)-dep,lines:[{lb:'미납 렌트료',amt:un,note:cnt+'회차'},{lb:'연체이자',amt:li,note:`연체이율 ${Math.round(TERM.lateRate*100)}%(데모)`},{lb:'잔여 원금',amt:bal,note:'기준일 이후 미도래 원금 + 잔존가'},{lb:'중도해지 위약금',amt:fee,note:fee==null?'정책 미설정(합계 제외)':''},{lb:'보증금 차감',amt:dep?-dep:0,note:'보증금 상계'}]}}
+const simRows=m=>m.lines.map(l=>`<tr><td>${esc(l.lb)}</td><td class="r">${l.amt==null?'-':num(l.amt)+'원'}</td><td>${esc(l.note||'')}</td></tr>`).concat(`<tr><td><b>청구금액 합계</b></td><td class="r"><b>${num(m.total)}원</b></td><td></td></tr>`);
+function vehCost(k){const A=acqOf(k),v={};let t=0;[['price',.93],['extra',.01],['tax',.005],['ins',.02],['env',.002],['mt',.01],['fd',.015]].forEach(([x,r])=>{v[x]=Math.round(A*r/1000)*1000;t+=v[x]});v.fa=A-t;v.A=A;return v} // 데모 배분: 항목별 금액은 임시 비율
+function termHtml(){const c=cu(),k=ck(),on=!!(S.cust&&CT()),sc=on?sched(k):[],fuel=/HEV/.test(k.model)?'하이브리드':/LPe/.test(k.model)?'LPG':k.model?'가솔린':'',I=(p,o)=>inp('term',p,o),ret=val('term','ret');
+ const BT=[['스케쥴조회','sch'],['연체내역','od'],['실행물건','veh'],['청구금액계산서','stmt'],['해지품의서','memo'],['해지통보서','notice'],['해지물건','item'],['양도계산서','xfer'],['양도증서','cert'],['중도해지입지급관리','pay']];
+ const R=[['계약번호',k.id],['이용자명',c.name],['차량번호',k.plate],['렌트상태',on?(RENT_ST[k.status]||k.status):''],['서비스상품',k.mtProduct?'M/T '+k.mtProduct:''],['보험상태',on?(k.mt.cv.car==='Y'?'자차 가입':'자차 미가입'):''],
+  ['계약 시작일',k.start],['만기일',k.end],['최초 등록일',k.regDate],['마지막 수납일자',lastPay(sc)],['차종',k.car],['연료',fuel],['차대번호',k.vin],['보증금',W(k.deposit)],['보험사',k.ins.company],
+  ['보험가입일',k.ins.start],['약정마일리지',K(k.agreedKm)],['차량가격',W(k.mt.carPriceWon)],['잔가금액',W(k.residual)]]; // 서비스상품=M/T 상품, 보험상태=M/T 자차보험가입여부, 차량가격=M/T 차량가격
+ const m=S.sim&&S.sim.ct===k.id?S.sim:null;
+ return(S.cust?'':`<div class="empty" style="padding:8px;margin:6px 0">고객을 검색해주세요.</div>`)
+  +`<div class="tbar">${BT.map(([l,t])=>`<button class="b" data-a="tm:${t}"${on?'':' disabled'}>${l}</button>`).join('')}</div>`
+  +'<div id="sec-ct">'+ctList()+'</div>'
+  +sec('렌트조건 <small class="mu">(계약 단위 · 조회 전용)</small>',`<div class="g">${R.map(([l,v],i)=>F(l,esc(v),{k:i<3})).join('')}${F('','')}${F('','')}</div>`)
+  +sec('해지내역 <small class="mu">(저장 범위: 해지내역)</small>',`<div class="g">`+F('진행상태',I('state',{t:'sel',o:CODES.termState}),{k:1})+F('해지기준일',I('baseDate',{t:'date'}),{k:1})+F('해지사유',I('reason',{t:'sel',o:CODES.termReason}))
+   +F('반납여부',I('ret',{t:'sel',o:CODES.termRet,r:1}))+F('인수일',I('takeDate',{t:'date',ro:ret!=='미반납'}))+F('','')+`</div>`
+   +(m?`<div style="margin-top:6px"><b>시뮬레이션 결과 (기준일 ${m.date})</b>${tbl(['항목','금액','비고'],simRows(m))}<p class="hint">※ 데모 산식(확정 산식 아님). 내역서는 [청구금액계산서]에서 확인·인쇄합니다.</p></div>`:'<p class="hint">해지기준일을 입력하고 [시뮬레이션]을 누르면 그 기준일로 청구금액이 계산됩니다.</p>'),
+   `<button class="b p" data-a="tm:sim"${on?'':' disabled'}>시뮬레이션</button>`+acts('term','해지내역',PERM.ctEdit))}
+function tmOpen(t){const c=S.cust,k=CT();if(!c||!k)return;const sc=sched(k),T=today(),tm=k.term,pr='<button class="b noprint" id="pr">인쇄</button>',m=S.sim&&S.sim.ct===k.id?S.sim:null,
+ simTot=m?num(m.total)+'원 (기준일 '+m.date+')':'시뮬레이션 미실행',
+ dl=a=>`<div class="g" style="grid-template-columns:110px 1fr 110px 1fr">${a.map(([x,y])=>F(x,esc(y||'-'))).join('')}</div>`,
+ sg=a=>`<div class="sig">${a.map(x=>`<div>${x}</div>`).join('')}${a.map(()=>'<div></div>').join('')}</div>`,car=k.car+' '+k.model;
+ if(t==='sch')return modal('스케쥴조회 — '+k.id,tbl(['회차','수납예정일','청구금액','원금','이자','잔여원금','상태'],sc.map(r=>`<tr class="${r.st==='미수납'?'miss':''}"><td>${r.n}</td><td>${r.due}</td><td class="r">${num(r.amt)}</td><td class="r">${num(r.pr)}</td><td class="r">${num(r.it)}</td><td class="r">${num(r.bal)}</td><td>${r.st}</td></tr>`))+'<p class="hint">※ 원금/이자 구분은 데모 산식입니다. 운영에서는 스케줄 API 값을 사용합니다.</p>','','xl');
+ if(t==='od'){const od=sc.filter(r=>r.st==='미수납'),lp=lastPay(sc),un=(sc.filter(r=>r.st==='수납').slice(-1)[0]||{}).bal??acqOf(k);
+  return modal('연체내역 — '+k.id,od.length?tbl(['관리지점','상품명','실행번호','이용자명','청구구분','회차','수납예정일','연체대상금액','연체이자','원금','이자','연체일수','직전납입일기준 연체일수','연체발생일','연체기산일','미회수원금'],od.map(r=>{const d=dd(r.due,T);return`<tr><td>${esc(k.branch)}</td><td>${esc(k.prod)}</td><td>${esc(k.id)}</td><td>${esc(c.name)}</td><td>월 렌트료</td><td>${r.n}</td><td>${r.due}</td><td class="r">${num(r.amt)}</td><td class="r">${num(Math.round(r.amt*TERM.lateRate*d/365/10)*10)}</td><td class="r">${num(r.pr)}</td><td class="r">${num(r.it)}</td><td class="r">${d}</td><td class="r">${lp?dd(lp,T):''}</td><td>${r.due}</td><td>${addDays(r.due,1)}</td><td class="r">${num(un)}</td></tr>`}))+'<p class="hint">※ 연체이자·원금/이자 구분은 데모 산식입니다.</p>':'<div class="empty">연체내역이 없습니다.</div>','','xl')}
+ if(t==='veh'){const v=vehCost(k);return modal('실행물건 — '+k.id,tbl(['순번','판매가격','부대비용','취득원가','차세','보험료','환경개선부담금','MT','수수료(딜러)','수수료(에이전트)','상태'],[`<tr><td>1</td>${[v.price,v.extra,v.A,v.tax,v.ins,v.env,v.mt,v.fd,v.fa].map(x=>`<td class="r">${num(x)}</td>`).join('')}<td>${esc(RENT_ST[k.status]||k.status)}</td></tr>`])+'<p class="hint">※ 항목별 금액은 취득원가를 임시 비율로 배분한 데모값입니다.</p><div class="st" style="margin-top:8px"><span>• 차량정보</span></div>'+`<div class="g">${[['제조사',k.maker],['차량명',k.car],['모델명',k.model],['차량번호',k.plate],['차대번호',k.vin],['차량등록일자',k.regDate],['연료',/HEV/.test(k.model)?'하이브리드':/LPe/.test(k.model)?'LPG':'가솔린'],['최초주행거리',K(k.firstKm)],['약정거리',K(k.agreedKm)]].map(([a,b])=>F(a,esc(b))).join('')}</div>`,'','xl')}
+ if(t==='stmt'){if(!m)return toast('해지내역에서 해지기준일을 입력하고 [시뮬레이션]을 먼저 실행하세요','e');
+  return modal('청구금액계산내역서',`<div class="doc"><h3>청구금액 계산 내역서</h3>${dl([['이용자명',c.name],['계약번호',k.id],['차량번호',k.plate],['기준일자',m.date]])}${tbl(['항목','금액','비고'],simRows(m))}<p class="mu">※ 데모 산식입니다. TODO: 확정 산식·양식 반영</p></div>`,pr,'xl')}
+ if(t==='memo')return modal('해지품의서',`<div class="doc"><h3>해지 품의서</h3>${dl([['작성일',T],['관리지점',k.branch],['이용자명',c.name],['이용자코드',c.code],['계약번호',k.id],['차량번호',k.plate],['차종',car],['계약기간',k.start+' ~ '+k.end],['렌트상태',RENT_ST[k.status]||k.status],['진행상태',tm.state],['해지사유',tm.reason],['해지기준일',tm.baseDate],['반납여부',tm.ret],['인수일',tm.takeDate],['청구금액',simTot],['','']])}${sg(['담당','팀장','부서장'])}</div>`,pr,'xl');
+ if(t==='notice')return modal('해지통보서',`<div class="doc"><h3>계약 해지 통보서</h3><p>수신: <b>${esc(c.name)}</b> 귀하</p><p>계약번호 ${esc(k.id)} (차량번호 ${esc(k.plate)}) 장기렌트 계약이 아래와 같이 해지됨을 통보합니다.</p>${dl([['해지사유',tm.reason],['해지기준일',tm.baseDate],['청구금액',simTot],['차량 반납',tm.ret==='미반납'?'미반납(인수일 '+(tm.takeDate||'-')+')':tm.ret]])}<p class="mu">※ 양식 문구는 임시입니다. TODO: 확정된 통보서 양식·검토 문구 반영</p><p style="text-align:right">${T}<br>(발신 회사명 · 직인 영역)</p></div>`,pr,'xl');
+ if(t==='item')return modal('해지물건 — '+k.id,tbl(['차량번호','차종','차대번호','해지기준일','반납여부','인수일','상태'],[`<tr><td>${esc(k.plate)}</td><td>${esc(car)}</td><td>${esc(k.vin)}</td><td>${tm.baseDate||'-'}</td><td>${tm.ret||'-'}</td><td>${tm.takeDate||'-'}</td><td>${esc(RENT_ST[k.status]||k.status)}</td></tr>`]),'','xl');
+ if(t==='xfer')return modal('양도계산서',`${dl([['양수인',c.name],['차량번호',k.plate],['차대번호',k.vin],['인수일',tm.takeDate],['시뮬레이션 청구금액',simTot],['양도금액','산식 미확정']])}<p class="hint">양도금액 산식(잔존가 처리·수수료 등)이 정해지면 계산 항목을 추가합니다. TODO</p>`,'','xl');
+ if(t==='cert')return modal('양도증서',`<div class="doc"><h3>양도 증서</h3>${dl([['양도일(인수일)',tm.takeDate],['양수인',c.name],['차량번호',k.plate],['차종',car],['차대번호',k.vin],['양도금액','양도계산서 확정 후 입력']])}<p class="mu">※ 양식 임시. TODO: 확정 양식 반영</p>${sg(['양도인(회사)','양수인','확인'])}</div>`,pr,'xl');
+ if(t==='pay')return modal('중도해지입지급관리 — '+k.id,tbl(['일자','구분','항목','금액','처리자','비고'],k.pay.map(r=>`<tr><td>${r.date}</td><td>${r.kind}</td><td>${esc(r.item)}</td><td class="r">${num(r.amt)}원</td><td>${esc(r.by)}</td><td>${esc(r.memo)}</td></tr>`))+'<p class="hint">입·지급 등록 기능은 다음 단계에서 구현합니다.</p>','','xl')}
+
+const SC={name:{ph:'이용자명 입력',ok:q=>q.length>0},biz:{ph:'사업자등록번호 10자리',ok:q=>dig(q).length===10,m:'사업자등록번호 10자리를 입력하세요'},
+ birth:{ph:'생년월일 앞 6자리(YYMMDD)',ok:q=>/^\d{6}$/.test(q),m:'숫자 6자리(YYMMDD)만 입력 가능합니다. 주민등록번호 뒷자리는 입력하지 마세요'},
+ rep:{ph:'대표자명 입력',ok:q=>q.length>0},plate:{ph:'차량번호 예) 123가4567',ok:q=>/^\d{2,3}[가-힣]\d{4}$/.test(q),m:'차량번호 형식을 확인하세요'},ct:{ph:'계약번호 입력',ok:q=>/^[A-Za-z0-9-]+$/.test(q),m:'영문·숫자·하이픈만 입력'}};
+const syncPh=()=>$('#q').placeholder=SC[$('#cond').value].ph;syncPh();$('#cond').onchange=syncPh;
+async function pickCust(c){if(!await guard())return;resetEdit();S.mode=null;S.cust=c;S.ctId=(DB.ct[c.id]||[])[0]?.id||null;S.csF={};S.csSel=null;S.pg=0;S.tab='ct';$('#res').innerHTML='';render()}
+$('#sf').onsubmit=async e=>{e.preventDefault();const q=$('#q').value.trim(),cd=$('#cond').value,C=SC[cd];
+ if(!q||!C.ok(q)){$('#res').innerHTML=`<p class="err" role="alert">${esc(C.m||'검색값을 입력하세요')}</p>`;return}
+ $('#res').innerHTML='<p class="hint">검색 중…</p>';const L=await api.search(cd,q);
+ if(!L.length){$('#res').innerHTML='<div class="empty">검색결과 없음</div>';return}
+ if(L.length===1)return pickCust(L[0]);
+ $('#res').innerHTML=sec(`검색결과 ${L.length}건 — 고객을 선택하세요`,tbl(['이용자명','고객구분','이용자코드','식별정보(마스킹)','연락처','관련 차량/계약'],L.map(c=>`<tr tabindex="0" data-a="pick:${c.id}"><td>${esc(c.name)}</td><td>${tname(c.type)}</td><td>${c.code}</td><td>${c.type==='P'?c.birth6.slice(0,2)+'****':maskBiz(c.bizNo)}</td><td>${maskTel(c.hp||c.tel)}</td><td>${(DB.ct[c.id]||[]).map(k=>k.plate+' / '+k.id).join('<br>')}</td></tr>`)))};
+$('#newc').onclick=async()=>{if(!await guard())return;resetEdit();S.mode='new';S.cust=mkCust(null,{vAcct:{bank:'',no:''},wAcct:{bank:'',no:''}});S.ctId=null;S.edit.cust=true;S.d.cust=clone(S.cust);$('#res').innerHTML='';render()};
+async function act(s){const[a,x,y]=s.split(':');
+ if(a==='tab'){S.tab=x;render()}
+ else if(a==='pick')pickCust(DB.cust.find(c=>c.id===x));
+ else if(a==='ct'){if(x===S.ctId||!await guard())return;resetEdit();S.ctId=x;render()}
+ else if(a==='edit'){S.edit[x]=true;S.d[x]=x==='ct'?flat(CT()):x==='ins'?Object.assign(clone(CT().ins),{pend:[]}):clone(base(x));render()}
+ else if(a==='cancel'){delete S.edit[x];delete S.d[x];S.dirty[x]=false;S.err={};S.drv=-1;if(x==='cust'&&S.mode==='new'){S.mode=null;S.cust=null}render()} // 마지막 저장값 복원
+ else if(a==='save')save(x);
+ else if(a==='add'){S.edit.cs=true;S.d.cs={date:today(),time:now().slice(11),phone:fmtTel(S.cust.hp),kind:'전화상담',dept:'',type:'',method:'',content:'',detail:'',resp:'',result:'',counselor:'',special:false,memo:'',tg:{},ct:''};render();const f0=document.querySelector('#csform input');f0&&f0.focus()}
+ else if(a==='csedit'){const r=(DB.cs[cu().id]||[]).find(x=>x.id===S.csSel);if(r){S.edit.cs=true;S.d.cs=Object.assign(clone(r),{tg:Object.fromEntries(r.tags.map(t=>[t,true]))});render()}}
+ else if(a==='sel'){S.csSel=y;render()}
+ else if(a==='pg'){S.pg+=Number(x);render()}
+ else if(a==='dsel'){S.drv=Number(x);render()}
+ else if(a==='drv')drvOp(x);
+ else if(a==='ver'){const b=mtRows().filter(r=>r.miss||r.err),st=CT().mtSt;st.verify=b.length?`누락/오류 ${b.length}건: `+b.map(r=>r.lb).join(', '):'통과';render()}
+ else if(a==='menu'){if(S.menu===x){S.menu='';S.shut=x}else{S.menu=x;S.shut=''}renderNav()}
+ else if(a==='view'){S.menu='';S.shut=VIEWS.find(v=>v[0]===x)[2];renderNav();if(x===S.view)return;if(!await guard())return;resetEdit();S.view=x;$('#res').innerHTML='';render()}
+ else if(a==='tm'){if(x!=='sim')return tmOpen(x);const k=CT(),dt=val('term','baseDate');if(!k)return;
+  if(!reD.test(dt||''))return toast('해지기준일을 입력하세요','e');if(dt<k.start)return toast('해지기준일이 계약 시작일보다 빠릅니다','e');S.sim=simulate(k,dt);render()}
+ else if(a==='fn')fnOpen(Number(x));
+ else if(a==='send')mtSend();
+ else if(a==='cp'){const m=S.d.mt;if(x==='ct'){const c=S.cust.contact;m.asName=c.name;m.asTel=c.tel;m.asHp=c.hp}else Object.assign(m.as,S.cust.a1);S.dirty.mt=true;render()} // 사용자가 누를 때만 복사(자동 덮어쓰기 금지)
+}
+document.addEventListener('click',e=>{if(S.menu&&!e.target.closest('.mg')){S.menu='';renderNav()}const b=e.target.closest('[data-a]');if(b&&!b.disabled)act(b.dataset.a)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('tr[data-a]'))e.target.click();if(e.key==='Escape'){if($('#mx'))closeModal();if(S.menu){S.menu='';renderNav()}}});
+function onEdit(e,ch){const el=e.target,D=el.dataset||{};
+ if(D.f&&ch){S.csF[D.f]=el.value;S.pg=0;render();return}
+ if(!D.s)return;const t=D.t;if(!ch&&(t==='sel'||t==='chk'||t==='rad'||t==='cg'))return;
+ set(S.d[D.s],D.p,t==='chk'?el.checked:t==='cg'?(el.checked?D.k:''):el.value);S.dirty[D.s]=true;delete S.err[D.s+'.'+D.p];
+ if(D.s==='cust'&&D.p==='type'&&el.value!=='C')S.d.cust.guarantor='';
+ if(D.s==='cust'&&D.p==='type'&&el.value==='P'){S.d.cust.bizState='';S.d.cust.bizDate=''} // 개인은 휴폐업 해당 없음
+ // 연대보증인은 법인만 입력 가능
+ if(D.s==='cust'&&D.p==='bizState')S.d.cust.bizDate=el.checked?today():''; // 휴폐업 상태 변경 시 확인일자=변경일(달력으로 수정 가능)
+ if(D.s==='cs'&&D.p==='content')S.d.cs.detail='';if(D.r||t==='cg')render()}
+document.addEventListener('input',e=>onEdit(e,0));document.addEventListener('change',e=>onEdit(e,1));
+render();
+</script></body></html>
